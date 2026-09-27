@@ -41,9 +41,9 @@ class TypeInfo:
     def add_member(self, name):
         self.members.add(name)
 
-    def add_method(self, name, min_args, max_args):
+    def add_method(self, name, min_args, max_args, signature=()):
         self.members.add(name)
-        self.methods[name].append((min_args, max_args))
+        self.methods[name].append((min_args, max_args, tuple(signature)))
 
     def has(self, name):
         return name in self.members
@@ -113,7 +113,7 @@ def collect_member(src, node, t):
         params = node.child_by_field_name("parameters")
         if nm is not None:
             total, required = count_params(params)
-            t.add_method(text(src, nm), required, total)
+            t.add_method(text(src, nm), required, total, param_types(src, params))
     elif kind == "constructor_declaration":
         nm = node.child_by_field_name("name")
         params = node.child_by_field_name("parameters")
@@ -177,7 +177,7 @@ class Checker:
                     ptype = p.child_by_field_name("type")
                     nm = p.child_by_field_name("name")
                     if ptype is not None and nm is not None:
-                        result[text(src, nm)] = base_type_name(text(src, ptype))
+                        result[text(src, nm)] = LOCAL_TYPE(text(src, ptype))
         body = fn_node.child_by_field_name("body")
         if body is None:
             return result
@@ -186,7 +186,7 @@ class Checker:
                 vtype = n.child_by_field_name("type")
                 if vtype is None:
                     continue
-                tname = base_type_name(text(src, vtype))
+                tname = LOCAL_TYPE(text(src, vtype))
                 for d in n.children:
                     if d.type == "variable_declarator":
                         nm = d.child_by_field_name("name")
@@ -203,12 +203,12 @@ class Checker:
                             if d.type == "variable_declarator":
                                 nm = d.child_by_field_name("name")
                                 if nm is not None:
-                                    result[text(src, nm)] = base_type_name(text(src, vtype))
+                                    result[text(src, nm)] = LOCAL_TYPE(text(src, vtype))
             elif n.type == "declaration_expression":
                 vtype = n.child_by_field_name("type")
                 nm = n.child_by_field_name("name")
                 if vtype is not None and nm is not None:
-                    result[text(src, nm)] = base_type_name(text(src, vtype))
+                    result[text(src, nm)] = LOCAL_TYPE(text(src, vtype))
         return result
 
     def check_tree(self, path, src, tree):
@@ -256,6 +256,10 @@ class Checker:
             # получатель — локальная переменная/параметр известного типа?
             if recv in locals_:
                 tname = locals_[recv]
+                if tname.endswith("[]"):
+                    if member not in ARRAY_MEMBERS:
+                        self.report(path, node, "у массива %s нет члена «%s»" % (tname, member))
+                    return
                 t = self.types.get(tname)
                 if t is not None and not t.has(member):
                     self.report(path, node, "у типа %s нет члена «%s»" % (tname, member))
@@ -303,6 +307,8 @@ class Checker:
             tname = None
             if recv in locals_:
                 tname = locals_[recv]
+                if tname.endswith("[]"):
+                    return                      # методы массивов (LINQ и т.п.) не проверяем
             elif recv in self.types:
                 tname = recv
             if tname is None:
@@ -314,7 +320,7 @@ class Checker:
                 return  # это может быть свойство-делегат или поле: отдельная проверка выше
             if has_spread:
                 return
-            for (mn, mx) in t.methods[member]:
+            for (mn, mx, _signature) in t.methods[member]:
                 if mn <= argc <= mx:
                     return
             self.report(path, node, "вызов %s.%s с %d аргументами не совпадает с объявлением %s"
@@ -339,6 +345,28 @@ class Checker:
         return count, spread
 
 
+ARRAY_MEMBERS = ("Length", "LongLength", "Rank", "GetLength", "GetLongLength", "Clone")
+
+
+def LOCAL_TYPE(tname):
+    """Имя типа локальной переменной; у массивов остаётся пометка «[]»."""
+    mark = "[]" if tname.strip().endswith("[]") else ""
+    return base_type_name(tname) + mark
+
+
+def param_types(src, params):
+    """Типы параметров по порядку — нужны, чтобы не путать перегрузки."""
+    result = []
+    if params is None:
+        return result
+    for p in params.children:
+        if p.type != "parameter":
+            continue
+        ptype = p.child_by_field_name("type")
+        result.append(base_type_name(text(src, ptype)) if ptype is not None else "?")
+    return result
+
+
 def base_type_name(tname):
     """Generic<Foo> -> Generic; string[] -> string; Fmt.Crypto -> Fmt"""
     tname = tname.strip()
@@ -357,11 +385,11 @@ def check_duplicates(types):
         # дубли методов с одинаковой арностью и именем — часто опечатка
         for name, arities in t.methods.items():
             seen = set()
-            for (mn, mx) in arities:
-                if (mn, mx) in seen:
+            for (mn, mx, signature) in arities:
+                if (mn, mx, signature) in seen:
                     problems.append("%s: в типе %s два объявления метода «%s» с (%d..%d) аргументами"
                                     % (os.path.relpath(t.file), t.name, name, mn, mx))
-                seen.add((mn, mx))
+                seen.add((mn, mx, signature))
     return problems
 
 

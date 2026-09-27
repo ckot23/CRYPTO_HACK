@@ -126,6 +126,37 @@ namespace CryptoHack
         public int RequiredLevel = 1;
         public string[] Theory = new string[0];
 
+        // ---- Поля, которых нет в gamedata.json ------------------------------
+        //  Их заполняют генератор контрактов (см. ContractGenerator.cs) и
+        //  каталог боссов (BossCatalog.cs). В браузерной версии им отвечает
+        //  список EXTRA_FIELDS в web/js/core/generator.js.
+        public bool Generated;          // цель собрана генератором
+        public int ContractIndex;       // номер контракта (1, 2, 3…)
+        public string TierKey = "";     // easy/medium/hard/expert
+        public string TierLabel = "";   // ЛЕГКО/СРЕДНЕ/СЛОЖНО/ЭКСПЕРТ/БОСС
+        public string TierAccent = "";  // цвет сложности для интерфейса
+        public int TierIndex;           // индекс сложности в таблице
+        public string Codename = "";    // кодовое имя операции
+        public bool Tutorial;           // обучающая миссия
+        public bool Boss;               // сюжетный босс
+        public int BossIndex;           // номер босса в цепочке (1…4)
+        public string BossName = "";
+        public string BossGlyph = "";
+        public string BossSubtitle = "";
+
+        /// <summary>Чего не хватает, чтобы взять цель (пусто — можно брать).</summary>
+        public string RequirementsText()
+        {
+            string text = "";
+            if (RequiredLevel > 1) text = "уровень " + RequiredLevel;
+            if (RequiredCodeLib > 0)
+            {
+                if (text.Length > 0) text += " · ";
+                text += "библиотека кода ур. " + RequiredCodeLib;
+            }
+            return text;
+        }
+
         public static Mission From(MissionDto d)
         {
             Mission m = new Mission();

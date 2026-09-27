@@ -11,6 +11,9 @@
 
 # Автогенерируемые файлы решений IDE
 *.csproj
+# ...но проверки в tools/unity-check — часть репозитория
+!tools/unity-check/*.csproj
+!tools/unity-check/parity/*.csproj
 *.unityproj
 *.sln
 *.suo
@@ -45,3 +48,7 @@ __pycache__/
 
 # ---- Браузерная версия: инструменты проверки ----
 node_modules/
+
+# ---- Проверки .NET (tools/unity-check) ----
+[Bb]in/
+obj/

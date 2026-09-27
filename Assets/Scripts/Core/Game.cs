@@ -5,6 +5,19 @@ using UnityEngine;
 
 namespace CryptoHack
 {
+    /// <summary>
+    /// Компактная запись контракта: номер, сложность и seed. Всё остальное
+    /// восстанавливает генератор — сейв не пухнет (как в браузерной версии).
+    /// </summary>
+    public class ContractRecord
+    {
+        public int N;
+        public string Tier = "easy";
+        public int Seed;
+        public int Boss;             // 0 — обычный контракт, иначе номер босса
+        public Mission Mission;      // собранная миссия (в сейв не пишется)
+    }
+
     public class Miner
     {
         public string Id = "";
@@ -44,7 +57,7 @@ namespace CryptoHack
         public const float MinerInstallBase = 120f;
         public const float MinerInstallStep = 80f;
         public const float LessonStipend = 40f;
-        public const int SaveVersion = 1;
+        public const int SaveVersion = 2;
         public const string SaveFileName = "cryptohack_save.json";
 
         // ---- Данные контента ----
@@ -67,6 +80,13 @@ namespace CryptoHack
         public bool SoundOn = true;
         public bool RealPython = true;
         public int SelectedMission = 1;
+
+        // ---- Профиль и контракты (как в браузерной версии) ----
+        public string Login = "";                                  // логин оператора
+        public bool Onboarded;                                     // прошёл экран входа
+        public List<ContractRecord> Contracts = new List<ContractRecord>();
+        Mission _tutorial;
+        bool _tutorialDoneAnnounced;
 
         // ---- Рынок ----
         public Dictionary<string, float> Prices = new Dictionary<string, float>();
@@ -256,6 +276,8 @@ namespace CryptoHack
         // ==================================================================
         public bool MissionUnlocked(Mission m)
         {
+            if (m == null) return false;
+            if (m.Tutorial) return true;                  // обучение доступно всегда
             return Level >= m.RequiredLevel && UpgradeLevel("codeLib") >= m.RequiredCodeLib;
         }
 
@@ -280,11 +302,259 @@ namespace CryptoHack
             if (MissionCompleted != null) MissionCompleted(m, stars);
             AddXp(m.RewardXp);
 
-            if (m.Id == Data.Missions.Count && Data.Missions.Count > 0)
+            if (m.Boss)
             {
-                Notify("ТЫ — ЛЕГЕНДА!", "Все цели взломаны. Дата-центр твой. Майни и богатей!", "gold");
+                BossData boss = BossCatalog.ByIndex(m.BossIndex);
+                Notify("БОСС ПОВЕРЖЕН: " + m.BossName,
+                    "Награда в тройном размере. Осталось боссов: " + (BossCatalog.Count - BossesDefeated()),
+                    "gold");
+                if (BossesDefeated() >= BossCatalog.Count)
+                {
+                    Notify("ТЫ — ЛЕГЕНДА ДАРКНЕТА!",
+                        "Повержены все боссы: ГИДРА, ЧЁРНЫЙ АРХИВ, СОВЕТ ДЕВЯТИ и ТИТАН. Сеть твоя.", "gold");
+                }
+                if (SoundOn) Sfx.LevelUp();
+                if (boss == null) Debug.LogWarning("Неизвестный босс: " + m.BossIndex);
+            }
+            else
+            {
+                if (m.Tutorial)
+                {
+                    Notify("ОБУЧЕНИЕ ПРОЙДЕНО",
+                        "Теперь можно брать контракты: выбери сложность в хак-терминале.", "gold");
+                }
+                else
+                {
+                    int done = ContractsDone();
+                    if (m.Generated && done > 0 && done % 5 == 0)
+                    {
+                        Notify("СЕРИЯ " + done,
+                            "Пять контрактов закрыто. Сложность можно поднять — награда выше.", "gold");
+                    }
+                    BossStatus status = BossStatus();
+                    if (status.Ready && status.Boss != null && !BossAccepted(status.Boss.Index))
+                    {
+                        Notify("БОСС ЖДЁТ ВЫЗОВА: " + status.Boss.Name,
+                            "Открой хак-терминал и прими вызов — награда в разы выше обычной.", "err");
+                    }
+                }
             }
             Save();
+        }
+
+        // ==================================================================
+        //  КОНТРАКТЫ, ОБУЧЕНИЕ И БОССЫ
+        //  (порт web/js/core/game.js: обучение + бесконечные контракты)
+        // ==================================================================
+
+        /// <summary>Обучающая миссия — единственная «ручная» цель в игре.</summary>
+        public Mission Tutorial
+        {
+            get
+            {
+                if (_tutorial == null) _tutorial = MakeTutorial();
+                return _tutorial;
+            }
+        }
+
+        Mission MakeTutorial()
+        {
+            Mission src = Data.Missions.Count > 0 ? Data.Missions[0] : new Mission();
+            Mission m = new Mission();
+            m.Id = src.Id;
+            m.Title = "ОБУЧЕНИЕ · " + (string.IsNullOrEmpty(src.Title) ? "Первый скан" : src.Title);
+            m.TargetName = src.TargetName;
+            m.TargetIp = src.TargetIp;
+            m.Os = src.Os;
+            m.Security = src.Security;
+            m.Difficulty = "ОБУЧЕНИЕ";
+            m.Concept = src.Concept;
+            m.ConceptDesc = src.ConceptDesc;
+            m.Briefing = src.Briefing;
+            m.Task = src.Task;
+            m.StarterCode = src.StarterCode;
+            m.Solution = src.Solution;
+            m.Hints = src.Hints;
+            m.RequiredPatterns = src.RequiredPatterns;
+            m.RewardCrypto = src.RewardCrypto;
+            m.RewardAmount = src.RewardAmount;
+            m.RewardDollars = src.RewardDollars;
+            m.RewardXp = src.RewardXp;
+            m.RequiredCodeLib = src.RequiredCodeLib;
+            m.RequiredLevel = src.RequiredLevel;
+            m.Theory = src.Theory;
+            m.Tutorial = true;
+            m.TierAccent = "#6cd8f2";
+            return m;
+        }
+
+        /// <summary>Все цели: обучение + сгенерированные контракты (+ взятые боссы).</summary>
+        public List<Mission> Missions()
+        {
+            List<Mission> list = new List<Mission>();
+            list.Add(Tutorial);
+            for (int i = 0; i < Contracts.Count; i++) list.Add(ContractMission(Contracts[i]));
+            return list;
+        }
+
+        /// <summary>Восстановить миссию из компактной записи контракта.</summary>
+        public Mission ContractMission(ContractRecord record)
+        {
+            if (record == null) return null;
+            if (record.Mission != null) return record.Mission;
+            if (record.Boss > 0)
+            {
+                record.Mission = BossCatalog.Build(record.Boss, record.Seed);
+                return record.Mission;
+            }
+            record.Mission = ContractGenerator.Generate(record.N, record.Tier, record.Seed,
+                record.N - 1, UpgradeLevel("codeLib"), null);
+            return record.Mission;
+        }
+
+        /// <summary>Найти цель по id: обучение, босс или контракт.</summary>
+        public Mission MissionById(int id)
+        {
+            if (Tutorial.Id == id) return Tutorial;
+            BossData boss = BossCatalog.ById(id);
+            if (boss != null) return BossCatalog.Build(boss.Index, boss.Id * 7919);
+            for (int i = 0; i < Contracts.Count; i++)
+            {
+                Mission m = ContractMission(Contracts[i]);
+                if (m != null && m.Id == id) return m;
+            }
+            return Data.GetMission(id);                  // на случай старых сейвов
+        }
+
+        /// <summary>Сколько контрактов игрок уже закрыл (без обучения).</summary>
+        public int ContractsDone()
+        {
+            int done = 0;
+            for (int i = 0; i < Contracts.Count; i++)
+            {
+                Mission m = ContractMission(Contracts[i]);
+                if (m != null && IsMissionCompleted(m.Id)) done++;
+            }
+            return done;
+        }
+
+        /// <summary>Последний взятый, но ещё не взломанный контракт.</summary>
+        public Mission ActiveContract()
+        {
+            for (int i = Contracts.Count - 1; i >= 0; i--)
+            {
+                Mission m = ContractMission(Contracts[i]);
+                if (m != null && !IsMissionCompleted(m.Id)) return m;
+            }
+            return null;
+        }
+
+        public bool TutorialDone()
+        {
+            return IsMissionCompleted(Tutorial.Id);
+        }
+
+        public bool TierUnlocked(string tierKey)
+        {
+            TierDef t = ContractGenerator.Tier(tierKey);
+            if (t == null) return false;
+            return t.Unlocked(Level, UpgradeLevel("codeLib"));
+        }
+
+        public string TierRequirement(string tierKey)
+        {
+            TierDef t = ContractGenerator.Tier(tierKey);
+            if (t == null) return "";
+            return t.Requirement(Level, UpgradeLevel("codeLib"));
+        }
+
+        /// <summary>
+        /// Взять новый контракт выбранной сложности. Возвращает миссию или null,
+        /// если сложность ещё закрыта или не пройдено обучение.
+        /// </summary>
+        public Mission CreateContract(string tierKey, int seedOverride)
+        {
+            if (!TierUnlocked(tierKey)) return null;
+            if (!TutorialDone()) return null;
+
+            ContractRecord record = new ContractRecord();
+            record.N = Contracts.Count + 1;
+            record.Tier = tierKey;
+            record.Seed = seedOverride != 0 ? seedOverride : UnityEngine.Random.Range(1, int.MaxValue);
+            Contracts.Add(record);
+
+            Mission mission = ContractMission(record);
+            SelectedMission = mission.Id;
+            Notify("Контракт взят", mission.Title + " · " + mission.TargetName, "info");
+            if (SoundOn) Sfx.UiOk();
+            if (StateChanged != null) StateChanged();
+            Save();
+            return mission;
+        }
+
+        /// <summary>Следующий босс и готовность к вызову.</summary>
+        public BossStatus BossStatus()
+        {
+            return BossCatalog.Availability(this);
+        }
+
+        public bool BossAvailable()
+        {
+            return BossStatus().Ready;
+        }
+
+        public bool BossAccepted(int bossIndex)
+        {
+            for (int i = 0; i < Contracts.Count; i++)
+            {
+                if (Contracts[i].Boss == bossIndex) return true;
+            }
+            return false;
+        }
+
+        public bool IsBossDefeated(int bossIndex)
+        {
+            BossData boss = BossCatalog.ByIndex(bossIndex);
+            return boss != null && IsMissionCompleted(boss.Id);
+        }
+
+        public int BossesDefeated()
+        {
+            return BossCatalog.DefeatedCount(this);
+        }
+
+        /// <summary>Принять вызов босса: особая цель встаёт в очередь контрактов.</summary>
+        public Mission AcceptBoss()
+        {
+            BossStatus status = BossStatus();
+            if (!status.Ready || status.Boss == null) return null;
+
+            BossData boss = status.Boss;
+            for (int i = 0; i < Contracts.Count; i++)
+            {
+                if (Contracts[i].Boss == boss.Index)
+                {
+                    Mission already = ContractMission(Contracts[i]);
+                    SelectedMission = already.Id;
+                    return already;                       // повторный вызов не дублируется
+                }
+            }
+
+            ContractRecord record = new ContractRecord();
+            record.N = Contracts.Count + 1;
+            record.Tier = "expert";
+            record.Seed = boss.Id * 7919;
+            record.Boss = boss.Index;
+            Contracts.Add(record);
+
+            Mission mission = ContractMission(record);
+            SelectedMission = mission.Id;
+            Notify(boss.Glyph + " ВЫЗОВ БРОШЕН: " + boss.Name,
+                boss.Subtitle + " · защита " + boss.Security + "% · " + Fmt.Dollars(boss.Dollars), "err");
+            if (SoundOn) Sfx.LevelUp();
+            if (StateChanged != null) StateChanged();
+            Save();
+            return mission;
         }
 
         // ==================================================================
@@ -548,6 +818,21 @@ namespace CryptoHack
                 dto.soundOn = SoundOn;
                 dto.realPython = RealPython;
                 dto.selectedMission = SelectedMission;
+                dto.login = Login;
+                dto.onboarded = Onboarded;
+
+                // контракты пишем компактно: номер + сложность + seed (+ номер босса)
+                dto.contractN = new int[Contracts.Count];
+                dto.contractTier = new string[Contracts.Count];
+                dto.contractSeed = new int[Contracts.Count];
+                dto.contractBoss = new int[Contracts.Count];
+                for (int i = 0; i < Contracts.Count; i++)
+                {
+                    dto.contractN[i] = Contracts[i].N;
+                    dto.contractTier[i] = Contracts[i].Tier;
+                    dto.contractSeed[i] = Contracts[i].Seed;
+                    dto.contractBoss[i] = Contracts[i].Boss;
+                }
 
                 dto.cryptoIds = new string[Crypto.Count];
                 dto.cryptoAmounts = new float[Crypto.Count];
@@ -631,6 +916,23 @@ namespace CryptoHack
                     }
                 }
 
+                Login = dto.login == null ? "" : dto.login;
+                Onboarded = dto.onboarded;
+                // логин из старых сейвов (без поля login) не теряем: он просто пустой
+                Contracts.Clear();
+                if (dto.contractTier != null && dto.contractN != null)
+                {
+                    for (int i = 0; i < dto.contractTier.Length; i++)
+                    {
+                        ContractRecord record = new ContractRecord();
+                        record.N = i < dto.contractN.Length ? dto.contractN[i] : i + 1;
+                        record.Tier = string.IsNullOrEmpty(dto.contractTier[i]) ? "easy" : dto.contractTier[i];
+                        record.Seed = dto.contractSeed != null && i < dto.contractSeed.Length ? dto.contractSeed[i] : 0;
+                        record.Boss = dto.contractBoss != null && i < dto.contractBoss.Length ? dto.contractBoss[i] : 0;
+                        Contracts.Add(record);
+                    }
+                }
+
                 CompletedMissions.Clear();
                 if (dto.completedMissions != null)
                 {
@@ -687,6 +989,11 @@ namespace CryptoHack
             CompletedMissions.Clear();
             CompletedLessons.Clear();
             Miners.Clear();
+            Contracts.Clear();
+            Login = "";
+            Onboarded = false;
+            _tutorial = null;
+            _tutorialDoneAnnounced = false;
             TotalHacked = 0;
             TotalEarnedDollars = 0f;
             TotalTrades = 0;
@@ -722,6 +1029,13 @@ namespace CryptoHack
             public bool soundOn;
             public bool realPython;
             public int selectedMission;
+            // версия 2: логин, экран входа и очередь контрактов
+            public string login;
+            public bool onboarded;
+            public int[] contractN;
+            public string[] contractTier;
+            public int[] contractSeed;
+            public int[] contractBoss;
         }
     }
 }
