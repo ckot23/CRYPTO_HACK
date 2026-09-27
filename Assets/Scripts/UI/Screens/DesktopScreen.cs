@@ -186,8 +186,6 @@ namespace CryptoHack
             _pyMode = Ui.Label(bar, _game.PythonModeText(), 10, Theme.TextMuted, TextAnchor.MiddleLeft, false, false);
             Ui.TopLeft(_pyMode.rectTransform, x + 4f, 0f, 210f, TopbarH);
 
-            _operator = Ui.Label(bar, "", 10, Theme.TextDim, TextAnchor.MiddleLeft, false, false);
-            Ui.TopLeft(_operator.rectTransform, x + 4f, 0f, 230f, TopbarH);
 
             RectTransform right = Ui.Node("Right", bar);
             Ui.TopRight(right, 12f, 0f, 560f, TopbarH);
@@ -270,11 +268,13 @@ namespace CryptoHack
             Ui.TopLeft(_taskbarButtons, 114f, 6f, 700f, 28f);
 
             RectTransform right = Ui.Node("Right", bar);
-            Ui.TopRight(right, 12f, 0f, 320f, TaskbarH);
+            Ui.TopRight(right, 12f, 0f, 470f, TaskbarH);
             _income = Ui.Label(right, "", 10, Theme.Green, TextAnchor.MiddleRight, false, false);
-            Ui.TopLeft(_income.rectTransform, 0f, 0f, 190f, TaskbarH);
+            Ui.TopLeft(_income.rectTransform, 0f, 0f, 150f, TaskbarH);
+            _operator = Ui.Label(right, "", 10, Theme.TextDim, TextAnchor.MiddleRight, false, false);
+            Ui.TopLeft(_operator.rectTransform, 150f, 0f, 200f, TaskbarH);
             _taskBtc = Ui.Label(right, "", 10, Theme.TextMuted, TextAnchor.MiddleRight, false, false);
-            Ui.TopLeft(_taskBtc.rectTransform, 190f, 0f, 130f, TaskbarH);
+            Ui.TopLeft(_taskBtc.rectTransform, 350f, 0f, 120f, TaskbarH);
         }
 
         // ==================== ОКНА ====================
