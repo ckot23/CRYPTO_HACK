@@ -14,6 +14,7 @@
     { name: "Первый взлом", desc: "Пройди обучение", check: function (g) { return g.tutorialDone(); } },
     { name: "Серийный хакер", desc: "Закрой 4 контракта", check: function (g) { return g.contractsDone() >= 4; } },
     { name: "Легенда даркнета", desc: "Закрой 10 контрактов", check: function (g) { return g.contractsDone() >= 10; } },
+    { name: "Гроза корпораций", desc: "Повергни всех боссов", check: function (g) { return g.bossesDefeated() >= CH.Bosses.list.length; } },
     { name: "Фермер", desc: "Установи первый майнер", check: function (g) { return g.miners.length >= 1; } },
     { name: "Магнат", desc: "Держи 4+ майнера", check: function (g) { return g.miners.length >= 4; } },
     { name: "Трейдер", desc: "Соверши 5 сделок", check: function (g) { return g.totalTrades >= 5; } },
@@ -63,8 +64,9 @@
           var cells = [
             { v: game.totalHacked, c: "ВЗЛОМОВ", color: "#00ff9d" },
             { v: game.miners.length, c: "МАЙНЕРОВ", color: "#00e5ff" },
-            { v: game.totalTrades, c: "СДЕЛОК", color: "#ffe600" },
-            { v: game.completedLessons.length, c: "УРОКОВ", color: "#ff2d78" }
+            { v: game.bossesDefeated() + "/" + CH.Bosses.list.length, c: "БОССОВ", color: "#ff2d78" },
+            { v: game.completedLessons.length, c: "УРОКОВ", color: "#00e5ff" },
+            { v: game.totalTrades, c: "СДЕЛОК", color: "#ffe600" }
           ];
           var grid = el("div", { cls: "stat-grid" });
           cells.forEach(function (cell) {

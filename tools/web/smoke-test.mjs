@@ -270,12 +270,14 @@ async function run() {
   /* --------------------------- 9. содержимое --------------------------- */
   check("школа Python отрисовала уроки", !!doc.querySelector(".lesson-item"));
   check("биржа нарисовала график", !!doc.querySelector("canvas.chart"));
-  check("профиль показал достижения", doc.querySelectorAll(".ach").length === 8);
+  check("профиль показал достижения", doc.querySelectorAll(".ach").length >= 8,
+    "достижений: " + doc.querySelectorAll(".ach").length);
   check("файлы показали виртуальную ФС", /пароли\.txt/.test(text()));
   check("чёрный рынок показал 4 апгрейда", !!doc.querySelector(".upgrade-card"));
 
   /* --------------------------- 10. симулятор --------------------------- */
   const sim = window.CH.PySim;
+  const GenRef = window.CH.Generator;
   check("синтаксис: пустой скрипт не проходит", sim.simulate("", tutorial, 0).missing.length > 0);
   check("синтаксис: ловит пропущенное двоеточие", !!sim.checkSyntax("if x == 1\n    print(1)"));
   check("требования обучении проверяются", sim.checkPatterns(tutorial.solution, tutorial).length === 0);
@@ -334,6 +336,79 @@ async function run() {
     game.tierUnlocked("easy") && game.tierUnlocked("medium") && !game.tierUnlocked("expert"));
   check("после старого сейва можно взять новый контракт",
     !!game.createContract("medium", 999) && game.contracts.length === 1);
+
+  /* ------------- 13. все шаблоны заданий ------------------------------- */
+  const allTemplates = GenRef.allTemplates();
+  const badTemplates = [];
+  allTemplates.forEach(function (t) {
+    const tierKey = GenRef.TIERS[t.tiers[0]].key;
+    for (let seed = 1; seed <= 4; seed++) {
+      const m = GenRef.generate({
+        index: seed, tier: tierKey, seed: seed * 31337, contractsDone: seed,
+        codeLib: 3, templateId: t.id
+      });
+      if (m.requiredPatterns.length === 0) badTemplates.push(t.id + ": нет требований");
+      if (!m.solution || !sim.simulate(m.solution, m, 0).success) badTemplates.push(t.id + ": решение не проходит");
+      if (m.hints.length < 3 || m.theory.length < 3) badTemplates.push(t.id + ": мало теории/подсказок");
+    }
+  });
+  check("все " + allTemplates.length + " шаблонов заданий проходимы и заполнены",
+    badTemplates.length === 0, badTemplates.slice(0, 4).join(" | "));
+  check("запрошенный шаблон выдаётся принудительно",
+    GenRef.generate({ index: 1, tier: "expert", seed: 5, codeLib: 3, templateId: "try_except" }).concept
+      === allTemplates.filter((t) => t.id === "try_except")[0].concept);
+
+  /* ---------------------------- 14. боссы ------------------------------ */
+  const Bosses = window.CH.Bosses;
+  check("в игре четыре сюжетных босса", Bosses.list.length === 4,
+    Bosses.list.map((b) => b.name).join(", "));
+  check("боссы идут по цепочке требований",
+    Bosses.list[0].need < Bosses.list[1].need && Bosses.list[1].need < Bosses.list[2].need &&
+    Bosses.list[2].need < Bosses.list[3].need,
+    Bosses.list.map((b) => b.need).join(" < "));
+
+  const bossMissions = Bosses.list.map((b) => Bosses.build(b.index, 1000 + b.index));
+  const badBosses = bossMissions.filter((m) => !sim.simulate(m.solution, m, 0).success);
+  check("решения всех боссов проходят их требования", badBosses.length === 0,
+    badBosses.map((m) => m.bossName).join(", "));
+  check("у боссов тройная награда и высокая защита",
+    bossMissions.every((m) => m.rewardDollars > 2000 && m.security > 80 && m.boss === true),
+    bossMissions.map((m) => m.bossName + " $" + m.rewardDollars).join(" · "));
+
+  // доводим игрока до ЭКСПЕРТа
+  game.dollars = 60000;
+  game.addXp(6000);
+  for (let i = 0; i < 6; i++) game.buyUpgrade("codeLib");
+  check("уровень 5 и код-либа 3 открывают ЭКСПЕРТ", game.tierUnlocked("expert"),
+    "уровень " + game.level + ", код-либа " + game.upgradeLevel("codeLib"));
+
+  const statusBefore = game.bossStatus();
+  check("до нужного числа контрактов босс закрыт",
+    !statusBefore.ready && statusBefore.boss.name === "ГИДРА", statusBefore.reason);
+
+  // закрываем контракты, чтобы открыть босса
+  while (game.contracts.length < 4) game.createContract("hard", 4242 + game.contracts.length);
+  const opened = game.contracts.map((r) => game.contractMission(r))
+    .filter((m) => !game.isMissionCompleted(m.id));
+  opened.slice(0, 2).forEach((m) => game.hackSuccess(m, 3));
+  check("два закрытых контракта открывают босса", game.bossStatus().ready, game.bossStatus().reason);
+
+  const bossMission = game.acceptBoss();
+  check("вызов босса принят в терминал", !!bossMission && bossMission.boss === true && bossMission.id === 9001);
+  check("повторный вызов не дублирует босса", game.acceptBoss().id === bossMission.id);
+  game.hackSuccess(bossMission, 3);
+  check("босс повержен и посчитан", game.bossesDefeated() === 1);
+  check("следующим идёт ЧЁРНЫЙ АРХИВ и он пока закрыт",
+    game.bossStatus().boss.name === "ЧЁРНЫЙ АРХИВ" && !game.bossStatus().ready,
+    game.bossStatus().reason);
+
+  game.save();
+  const savedBoss = JSON.parse(window.localStorage.getItem("cryptohack_save.json"));
+  check("в сейве отмечен поверженный босс",
+    savedBoss.contracts.some((c) => c.boss === 1) && savedBoss.completedMissions.includes(9001));
+
+  await wait(100);
+  check("в терминале появился блок боссов", !!doc.querySelector(".boss-box"));
 
   check("нет ошибок JS на странице", errors.length === 0, errors.slice(0, 3).join(" | "));
 }

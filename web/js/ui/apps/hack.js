@@ -117,6 +117,55 @@
           CH.Dom.clear(tierBox);
           if (!game.tierUnlocked(tierChoice)) tierChoice = preferredTier();
 
+          // --- боссы: свой блок над выбором сложности ---
+          var status = game.bossStatus();
+          if (status.boss) {
+            var boss = status.boss;
+            var taken = game.contracts.some(function (r) { return r.boss === boss.index; });
+            var bossBox = el("div", { cls: "boss-box" + (status.ready && !taken ? " ready" : "") },
+              el("div", { cls: "boss-title" },
+                el("span", { cls: "glyph", text: boss.glyph }),
+                el("span", { text: status.ready ? "БОСС ЖДЁТ ВЫЗОВА" : "СЛЕДУЮЩИЙ БОСС" })
+              ),
+              el("div", { cls: "boss-name", text: boss.name + " — " + boss.subtitle }),
+              el("div", { cls: "boss-note", text: taken
+                ? "вызов принят · цель ждёт в списке целей"
+                : (status.ready
+                  ? "защита " + boss.security + "% · +" + Fmt.dollars(boss.dollars) + " · +" + Fmt.crypto(boss.amount) + " " + boss.coin
+                  : status.reason) })
+            );
+            if (taken) {
+              bossBox.classList.add("accepted");
+              var open = UI.button({
+                text: "ОТКРЫТЬ ЦЕЛЬ",
+                accent: "#ff2d78",
+                kind: "outline",
+                height: 28,
+                onClick: function () {
+                  var rec = game.contracts.filter(function (r) { return r.boss === boss.index; })[0];
+                  if (rec) selectMission(game.contractMission(rec).id);
+                }
+              });
+              open.style.width = "100%";
+              bossBox.appendChild(open);
+            } else if (status.ready) {
+              var accept = UI.button({
+                text: "ПРИНЯТЬ ВЫЗОВ",
+                accent: "#ff2d78",
+                kind: "solid",
+                height: 28,
+                onClick: function () { confirmBoss(boss); }
+              });
+              accept.style.width = "100%";
+              bossBox.appendChild(accept);
+            }
+            bossBox.appendChild(el("div", {
+              cls: "boss-count",
+              text: "повержено боссов: " + game.bossesDefeated() + "/" + CH.Bosses.list.length
+            }));
+            tierBox.appendChild(bossBox);
+          }
+
           tierBox.appendChild(el("div", { cls: "tier-title", text: "СЛОЖНОСТЬ КОНТРАКТА" }));
           var chips = el("div", { cls: "tier-chips" });
           CH.Generator.TIERS.forEach(function (t) { chips.appendChild(tierChip(t)); });
@@ -172,8 +221,8 @@
           var done = game.isMissionCompleted(m.id);
           var unlocked = game.missionUnlocked(m);
           var cls = "mission-item" + (done ? " done" : "") + (unlocked ? "" : " locked") +
-            (mission && mission.id === m.id ? " active" : "");
-          var badge = done ? "✓" : (unlocked ? "!" : "✗");
+            (m.boss ? " boss" : "") + (mission && mission.id === m.id ? " active" : "");
+          var badge = done ? "✓" : (m.boss ? "☠" : (unlocked ? "!" : "✗"));
           var btn = UI.button({
             text: badge + "  " + m.title + "\n" + subtitle,
             accent: done ? "#00ff9d" : (unlocked ? (m.tierAccent || "#d7e3f4") : "#3a4a63"),
@@ -214,6 +263,39 @@
           }
 
           refreshTierBox();
+        }
+
+        /* ----------------------------- боссы ------------------------------- */
+        function confirmBoss(boss) {
+          var body = el("div", { cls: "col" },
+            el("div", { style: { "font-size": "12px", color: "#b9c7dd", "white-space": "pre-wrap" }, text: boss.briefing }),
+            el("div", { cls: "boss-reward", text:
+              "ЗАЩИТА " + boss.security + "% · НАГРАДА: +" + Fmt.crypto(boss.amount) + " " + boss.coin +
+              " · +" + Fmt.dollarsFull(boss.dollars) + " · +" + boss.xp + " XP" }),
+            el("div", { cls: "tier-note", text: "Провал ничего не отнимает — можно пробовать сколько нужно." })
+          );
+          var buttons = el("div", { cls: "row", style: { gap: "8px" } });
+          var ok = UI.button({
+            text: "ПРИНЯТЬ ВЫЗОВ", accent: "#ff2d78", kind: "solid", height: 34,
+            style: { flex: "1 1 0" },
+            onClick: function () {
+              var created = game.acceptBoss();
+              modal.close();
+              if (created) {
+                CH.Sfx.hackSuccess();
+                UI.toast("Вызов принят", created.title + " · защита " + created.security + "%", "err");
+                selectMission(created.id);
+              }
+            }
+          });
+          buttons.appendChild(ok);
+          buttons.appendChild(UI.button({
+            text: "позже", accent: "#5b6b85", kind: "outline", height: 34,
+            onClick: function () { modal.close(); }
+          }));
+          body.appendChild(buttons);
+
+          var modal = UI.modal({ title: boss.glyph + " " + boss.name, body: body, accent: "#ff2d78" });
         }
 
         /* ---------------------------- вкладки ------------------------------ */
@@ -305,7 +387,9 @@
             text: "+" + Fmt.crypto(mission.rewardAmount) + " " + mission.rewardCrypto +
               "   +" + Fmt.dollars(mission.rewardDollars) + "   +" + mission.rewardXp + " XP" +
               (game.isMissionCompleted(mission.id) ? "   ✓ пройдено — повтор без награды" : "") +
-              (mission.requirementsText() ? "   · нужно: " + mission.requirementsText() : "")
+              (!game.missionUnlocked(mission) && mission.requirementsText()
+                ? "   · нужно: " + mission.requirementsText()
+                : "")
           }));
         }
 

@@ -250,6 +250,10 @@
 
   /** Восстановить объект миссии из компактной записи сейва. */
   Game.prototype.contractMission = function (record) {
+    if (record.boss) {
+      if (!record.mission) record.mission = CH.Bosses.build(record.boss, record.seed);
+      return record.mission;
+    }
     if (!record.mission) {
       record.mission = CH.Generator.generate({
         index: record.n,
@@ -265,6 +269,8 @@
   Game.prototype.getMission = function (id) {
     id = Number(id);
     if (this.tutorial && this.tutorial.id === id) return this.tutorial;
+    var boss = CH.Bosses.byId(id);
+    if (boss) return this.contractMission({ n: 0, tier: "expert", seed: boss.id * 7919, boss: boss.index });
     for (var i = 0; i < this.contracts.length; i++) {
       var m = this.contractMission(this.contracts[i]);
       if (m.id === id) return m;
@@ -327,6 +333,41 @@
     return mission;
   };
 
+  /** Следующий босс и готовность к бою (см. bosses.js). */
+  Game.prototype.bossStatus = function () {
+    return CH.Bosses.availability(this);
+  };
+
+  /** Принять вызов босса: он встаёт в очередь контрактов как особая цель. */
+  Game.prototype.acceptBoss = function () {
+    var status = this.bossStatus();
+    if (!status.ready) return null;
+
+    var boss = status.boss;
+    var record = { n: this.contracts.length + 1, tier: "expert", seed: boss.id * 7919, boss: boss.index };
+    var existing = this.contracts.filter(function (r) { return r.boss === boss.index; })[0];
+    if (existing) {
+      var already = this.contractMission(existing);
+      this.selectedMission = already.id;
+      return already;
+    }
+
+    this.contracts.push(record);
+    var mission = this.contractMission(record);
+    this.selectedMission = mission.id;
+    this.emit("state");
+    this.save();
+    return mission;
+  };
+
+  Game.prototype.bossesDefeated = function () {
+    return CH.Bosses.defeatedCount(this);
+  };
+
+  Game.prototype.bossAvailable = function () {
+    return this.bossStatus().ready;
+  };
+
   Game.prototype.missionUnlocked = function (m) {
     if (!m) return false;
     if (m.tutorial) return true;
@@ -352,10 +393,28 @@
     this.emit("mission", m, stars || 0);
     this.addXp(m.rewardXp);
 
-    // вехи за длинную серию контрактов
-    var done = this.contractsDone();
-    if (m.generated && done > 0 && done % 5 === 0) {
-      this.notify("СЕРИЯ " + done, "Пять контрактов закрыто. Сложность можно поднять — награда выше.", "gold");
+    // боссы — отдельная строка в истории
+    if (m.boss) {
+      this.notify("БОСС ПОВЕРЖЕН: " + m.bossName, "Награда в тройном размере. Осталось боссов: " +
+        (CH.Bosses.list.length - this.bossesDefeated()), "gold");
+      if (this.bossesDefeated() >= CH.Bosses.list.length) {
+        this.notify("ТЫ — ЛЕГЕНДА ДАРКНЕТА!",
+          "Повержены все боссы: ГИДРА, ЧЁРНЫЙ АРХИВ, СОВЕТ ДЕВЯТИ и ТИТАН. Сеть твоя.", "gold");
+      }
+      if (this.soundOn) CH.Sfx.levelUp();
+    } else {
+      // вехи за длинную серию контрактов
+      var done = this.contractsDone();
+      if (m.generated && done > 0 && done % 5 === 0) {
+        this.notify("СЕРИЯ " + done, "Пять контрактов закрыто. Сложность можно поднять — награда выше.", "gold");
+      }
+      // и весть о том, что открылся босс
+      var status = this.bossStatus();
+      var alreadyTaken = this.contracts.some(function (r) { return r.boss === status.boss.index; });
+      if (status.ready && !alreadyTaken) {
+        this.notify("БОСС ЖДЁТ ВЫЗОВА: " + status.boss.name,
+          "Открой хак-терминал и прими вызов — награда в разы выше обычной.", "err");
+      }
     }
     this.save();
   };
@@ -563,7 +622,10 @@
         xp: this.xp,
         level: this.level,
         login: this.login,
-        contracts: this.contracts.map(function (c) { return { n: c.n, tier: c.tier, seed: c.seed }; }),
+        contracts: this.contracts.map(function (c) {
+          return { n: c.n, tier: c.tier, seed: c.seed, boss: c.boss || 0 };
+        }),
+        bossSlain: this.completedMissions.slice(),
         completedMissions: this.completedMissions.slice(),
         miners: this.miners.map(function (m) {
           return { id: m.id, missionId: m.missionId, pcName: m.pcName, ip: m.ip, crypto: m.crypto, earned: m.earned };
@@ -605,7 +667,10 @@
       // контракты всегда перечитываются из сейва (в старых сейвах их просто нет)
       this.contracts = Array.isArray(dto.contracts)
         ? dto.contracts.filter(function (c) { return c && c.tier; }).map(function (c) {
-          return { n: Number(c.n) || 1, tier: String(c.tier), seed: Number(c.seed) | 0 };
+          return {
+            n: Number(c.n) || 1, tier: String(c.tier), seed: Number(c.seed) | 0,
+            boss: Number(c.boss) || 0
+          };
         })
         : [];
       if (typeof dto.realPython === "boolean") this.realPython = dto.realPython;
@@ -664,7 +729,7 @@
     this.hasSave = false;
     this.onboarded = false;
     this.login = "";
-    this.contracts = [];
+    this.contracts = [];        // боссы живут в completedMissions — тоже чистим
     this.initMarket();
     this.emit("state");
     this.emit("prices");

@@ -444,6 +444,267 @@
           ]
         };
       }
+    },
+
+    /* --------------------- вторая волна шаблонов ------------------------ */
+    {
+      id: "fstring",
+      tiers: [1, 2],
+      codeLib: 0,
+      concept: "f-строки: подстановка значений",
+      conceptDesc: "f\"текст {переменная}\" подставляет значение прямо в строку — так собирают отчёты.",
+      build: function (c) {
+        return {
+          task: "Сохрани адрес цели в target и напечатай отчёт через f-строку: print(f\"Цель: {target}\").",
+          task: "Сохрани адрес цели в target и напечатай отчёт через f-строку: print(f\"Цель: {target}\").",
+          solution: 'target = "' + c.ip + '"\nprint(f"Цель: {target}")',
+          requiredPatterns: ["target\\s*=\\s*[\"']", "print\\s*\\(\\s*f[\"']", "\\{target\\}"],
+          hints: [
+            "f-строка начинается с буквы f перед кавычкой: f\"...\"",
+            "Внутри фигурных скобок пишется имя переменной: {target}",
+            "Пиши так: print(f\"Цель: {target}\")"
+          ],
+          theory: [
+            "f-строка — это строка с префиксом f, в которой можно подставлять значения.",
+            "Значение берётся из переменной внутри фигурных скобок.",
+            "Так удобно собирать отчёты: print(f\"Взломан {target}\")"
+          ]
+        };
+      }
+    },
+    {
+      id: "if_in_loop",
+      tiers: [1, 2],
+      codeLib: 1,
+      concept: "Если внутри цикла",
+      conceptDesc: "Условие можно поставить внутрь цикла — тогда решение принимается для каждого элемента.",
+      build: function (c) {
+        var wallet = c.ip.split(".").pop();
+        return {
+          task: "Пройди список try [\"0xA1\", \"0xB2\", \"0xC3\"] циклом: если адрес равен \"0xA1\" — вызови drain(w), иначе напечатай \"мимо\".",
+          starterCode: 'wallets = ["0xA1", "0xB2", "0xC3"]\n\n# for w in wallets:\n#     if w == "0xA1":\n#         drain(w)\n#     else:\n#         print("мимо")\n',
+          solution: 'wallets = ["0xA1", "0xB2", "0xC3"]\n\nfor w in wallets:\n    if w == "0xA1":\n        drain(w)\n    else:\n        print("мимо")',
+          requiredPatterns: ["for\\s+\\w+\\s+in\\s+", "if\\s+\\w+\\s*==", "drain\\s*\\(", "else\\s*:"],
+          hints: [
+            "Сначала цикл, потом условие внутри него.",
+            "Условие сравнения строки: if w == \"0xA1\":",
+            "Вложенные блоки — двойной отступ: 4 пробела под for и ещё 4 под if."
+          ],
+          theory: [
+            "Внутри цикла можно писать любые конструкции, включая if/else.",
+            "Каждая итерация проверяет условие заново.",
+            "Отступы показывают вложенность: сначала тело цикла, потом тело условия."
+          ]
+        };
+      }
+    },
+    {
+      id: "list_index",
+      tiers: [1, 2],
+      codeLib: 0,
+      concept: "Индексы и len()",
+      conceptDesc: "Элементы списка нумеруются с нуля: wallets[0] — первый. len() возвращает размер списка.",
+      build: function (c) {
+        return {
+          task: "Собери список wallets из трёх адресов, напечатай первый элемент wallets[0] и размер списка через len(wallets).",
+          starterCode: 'wallets = ["0xA1", "0xB2", "0xC3"]\n\n# print(wallets[0])\n# print(len(wallets))\n',
+          solution: 'wallets = ["0xA1", "0xB2", "0xC3"]\nprint(wallets[0])\nprint(len(wallets))',
+          requiredPatterns: ["wallets\\s*=\\s*\\[", "wallets\\s*\\[\\s*0\\s*\\]", "len\\s*\\("],
+          hints: [
+            "Квадратные скобки с числом внутри — это индекс: wallets[0]",
+            "Первый элемент всегда под номером 0, а не 1.",
+            "len(wallets) возвращает количество элементов списка."
+          ],
+          theory: [
+            "Индекс — позиция элемента в списке, счёт с нуля.",
+            "wallets[0] — первый адрес, wallets[1] — второй.",
+            "len() пригодится, чтобы узнать, сколько всего элементов."
+          ]
+        };
+      }
+    },
+    {
+      id: "loop_calls",
+      tiers: [1, 2],
+      codeLib: 0,
+      concept: "Цикл по списку адресов",
+      conceptDesc: "Список целей и цикл for — базовая связка: обойти все узлы и не повториться.",
+      build: function (c) {
+        var ips = [c.ip, "10.0.0.7", "192.168.1.44"];
+        var literals = ips.map(function (x) { return '"' + x + '"'; }).join(", ");
+        return {
+          task: "Создай список targets = [" + literals + "] и подключись к каждому адресу циклом: connect(t).",
+          starterCode: "# targets = [...]\n# for t in targets:\n#     connect(t)\n\n",
+          solution: "targets = [" + literals + "]\n\nfor t in targets:\n    connect(t)\n\nprint(\"все узлы под контролем\")",
+          requiredPatterns: ["targets\\s*=\\s*\\[", "for\\s+\\w+\\s+in\\s+targets", "connect\\s*\\("],
+          hints: [
+            "Список адресов — в квадратных скобках, каждый в кавычках.",
+            "Цикл по списку: for t in targets:",
+            "Внутри цикла подключайся: connect(t)"
+          ],
+          theory: [
+            "Цикл по списку автоматически перебирает все элементы.",
+            "Переменная t на каждой итерации — очередной адрес.",
+            "Так одним скриптом обходят целые подсети."
+          ]
+        };
+      }
+    },
+    {
+      id: "elif_chain",
+      tiers: [2, 3],
+      codeLib: 2,
+      concept: "Цепочка if / elif / else",
+      conceptDesc: "elif проверяет следующее условие, если предыдущее оказалось False. Так строят выбор тактики.",
+      build: function (c) {
+        var threshold = Math.max(51, c.security - 12);
+        return {
+          task: "Задай security = " + c.security + " и выбери тактику: если security больше " + threshold + " — ghost(), иначе если больше 40 — bypass(), иначе напечатай \"беру голыми руками\".",
+          starterCode: "security = " + c.security + "\n\n# if security > " + threshold + ":\n#     ghost()\n# elif security > 40:\n#     bypass()\n# else:\n#     print(\"беру голыми руками\")\n",
+          solution: "security = " + c.security + "\n\nif security > " + threshold + ":\n    ghost()\nelif security > 40:\n    bypass()\nelse:\n    print(\"беру голыми руками\")",
+          requiredPatterns: ["if\\s+security\\s*>", "elif\\s+security\\s*>", "bypass\\s*\\(", "else\\s*:"],
+          hints: [
+            "Первое условие — if, следующие — elif (сокращение от else if).",
+            "Каждый блок со своим отступом и двоеточием.",
+            "Порядок важен: Python проверяет условия сверху вниз."
+          ],
+          theory: [
+            "elif позволяет проверить несколько вариантов подряд.",
+            "Сработает только первый подходящий блок — остальные пропускаются.",
+            "else — запасной вариант, когда ни одно условие не подошло."
+          ]
+        };
+      }
+    },
+    {
+      id: "dict_wallets",
+      tiers: [2, 3],
+      codeLib: 1,
+      concept: "Словари: ключ → значение",
+      conceptDesc: "Словарь хранит пары «ключ: значение». Метод .items() отдаёт их парами для цикла.",
+      build: function (c) {
+        var count = rint(c.rng, 2, 3);
+        var pairs = [['"0xA1"', "0.4"], ['"0xB2"', "1.2"], ['"0xC3"', "2.4"]].slice(0, count)
+          .map(function (p) { return p[0] + ": " + p[1]; }).join(", ");
+        return {
+          task: "Собери словарь wallets = {" + pairs + "} и напечатай каждый адрес циклом по wallets.items().",
+          starterCode: "# wallets = {\"0xA1\": 0.4, \"0xB2\": 1.2}\n# for address, amount in wallets.items():\n#     print(address)\n\n",
+          solution: "wallets = {" + pairs + "}\n\nfor address, amount in wallets.items():\n    print(address)",
+          requiredPatterns: ["wallets\\s*=\\s*\\{", "items\\s*\\(\\s*\\)", "for\\s+\\w+\\s*,\\s*\\w+\\s+in\\s+", "print\\s*\\("],
+          hints: [
+            "Словарь — в фигурных скобках, пары разделяются запятыми: \"ключ\": значение",
+            "items() возвращает пары: for address, amount in wallets.items():",
+            "В цикле можно печатать только адрес: print(address)"
+          ],
+          theory: [
+            "Словарь (dict) хранит данные по ключу, а не по номеру.",
+            "Метод .items() удобен, когда нужны и ключ, и значение.",
+            "Две переменные в цикле получают ключ и значение соответственно."
+          ]
+        };
+      }
+    },
+    {
+      id: "sum_loop",
+      tiers: [2, 3],
+      codeLib: 1,
+      concept: "Накопление суммы в цикле",
+      conceptDesc: "Счётчик и переменная-накопитель — вечная связка: складывай значения по мере обхода.",
+      build: function (c) {
+        var amounts = [rint(c.rng, 4, 20), rint(c.rng, 20, 60), rint(c.rng, 60, 120)];
+        return {
+          task: "Сложи суммы [" + amounts.join(", ") + "] в переменную total циклом for и напечатай результат.",
+          starterCode: "amounts = [" + amounts.join(", ") + "]\ntotal = 0\n\n# for a in amounts:\n#     total += a\n\n# print(total)\n",
+          solution: "amounts = [" + amounts.join(", ") + "]\ntotal = 0\n\nfor a in amounts:\n    total += a\n\nprint(total)",
+          requiredPatterns: ["amounts\\s*=\\s*\\[", "total\\s*=\\s*0", "total\\s*\\+=", "print\\s*\\("],
+          hints: [
+            "Накопитель нужно обнулить до цикла: total = 0",
+            "Внутри цикла прибавляй: total += a",
+            "print(total) печатает итоговую сумму."
+          ],
+          theory: [
+            "+= прибавляет к текущему значению переменной.",
+            "Накопитель объявляют до цикла, иначе он будет обнуляться.",
+            "Так считают общие суммы, средние и итоги по кошелькам."
+          ]
+        };
+      }
+    },
+    {
+      id: "nested_loop",
+      tiers: [3],
+      codeLib: 2,
+      concept: "Вложенные циклы",
+      conceptDesc: "Цикл внутри цикла: внешний отвечает за узлы, внутренний — за попытки входа.",
+      build: function (c) {
+        return {
+          task: "Пройди 3 узла, и для каждого перебери 2 кода: вложенный цикл, внутри — brute(j).",
+          starterCode: "# for i in range(3):\n#     for j in range(2):\n#         brute(j)\n\n# print(\"сеть просканирована\")\n",
+          solution: "for i in range(3):\n    for j in range(2):\n        brute(j)\n\nprint(\"сеть просканирована\")",
+          requiredPatterns: ["for\\s+\\w+\\s+in\\s+range\\s*\\(\\s*3\\s*\\)[\\s\\S]*for\\s+\\w+\\s+in\\s+range", "brute\\s*\\(", "print\\s*\\("],
+          hints: [
+            "Внешний цикл: for i in range(3):",
+            "Внутренний пишется с отступом: for j in range(2):",
+            "Тело внутреннего цикла — ещё один отступ (8 пробелов)."
+          ],
+          theory: [
+            "Вложенный цикл выполняется целиком на каждой итерации внешнего.",
+            "Всего итераций — произведение количеств: 3 × 2 = 6.",
+            "Отступы показывают, какой цикл является внутренним."
+          ]
+        };
+      }
+    },
+    {
+      id: "try_except",
+      tiers: [3],
+      codeLib: 2,
+      concept: "Обработка ошибок: try / except",
+      conceptDesc: "try пытается выполнить код, except ловит ошибку и не даёт скрипту упасть.",
+      build: function (c) {
+        return {
+          task: "Попробуй расшифровать данные: в блоке try сохрани decrypt() в data и напечатай её, а в except обойди защиту bypass() и напечатай \"пошли в обход\".",
+          starterCode: "# try:\n#     data = decrypt()\n#     print(data)\n# except Exception:\n#     bypass()\n#     print(\"пошли в обход\")\n",
+          solution: "try:\n    data = decrypt()\n    print(data)\nexcept Exception:\n    bypass()\n    print(\"пошли в обход\")",
+          requiredPatterns: ["try\\s*:", "except\\b", "decrypt\\s*\\(", "bypass\\s*\\(", "print\\s*\\("],
+          hints: [
+            "Сначала try: — блок, который может упасть.",
+            "Затем except Exception: — что делать, если упало.",
+            "Внутри обоих блоков код пишется с отступом."
+          ],
+          theory: [
+            "try/except — страховка: ошибка не убивает весь скрипт.",
+            "except ловит исключение и позволяет продолжить работу.",
+            "В хакерских скриптах так обходят нестабильные цели."
+          ]
+        };
+      }
+    },
+    {
+      id: "func_return",
+      tiers: [3],
+      codeLib: 2,
+      concept: "Функции с return",
+      conceptDesc: "return возвращает результат из функции — его можно использовать в условии.",
+      build: function (c) {
+        var threshold = Math.max(60, c.security);
+        return {
+          task: "Сделай функцию check(security), которая возвращает security < " + threshold + ", и если check(" + c.security + ") истинна — вызови bypass().",
+          starterCode: "def check(security):\n    return security < " + threshold + "\n\n# if check(" + c.security + "):\n#     bypass()\n\n",
+          solution: "def check(security):\n    return security < " + threshold + "\n\nif check(" + c.security + "):\n    bypass()\n\nprint(\"проверка пройдена\")",
+          requiredPatterns: ["def\\s+check\\s*\\(", "return\\b", "if\\s+check\\s*\\(", "bypass\\s*\\("],
+          hints: [
+            "Функция описывается через def check(security):",
+            "Внутри — return с условием: return security < " + threshold,
+            "Результат функции можно использовать в if: if check(" + c.security + "):"
+          ],
+          theory: [
+            "return завершает функцию и отдаёт результат наружу.",
+            "Результат функции — обычное значение, его можно сравнивать и печатать.",
+            "Функции с return делают код читаемым: одна проверка — одно имя."
+          ]
+        };
+      }
     }
   ];
 
@@ -489,6 +750,10 @@
     var reason = pick(rng, PAYER_REASONS);
 
     var pool = TEMPLATES.filter(function (t) { return t.tiers.indexOf(tier.index) >= 0; });
+    if (opts.templateId) {
+      var forced = TEMPLATES.filter(function (t) { return t.id === opts.templateId; })[0];
+      if (forced) pool = [forced];
+    }
     // если у игрока ещё нет нужных функций — не подсовываем непроходимое задание
     if (opts.codeLib !== undefined) {
         var allowed = pool.filter(function (t) { return t.codeLib <= opts.codeLib; });
@@ -555,7 +820,7 @@
 
   /* Дополнительные поля, которых нет в базовом классе Mission. */
   var EXTRA_FIELDS = ["generated", "contractIndex", "tier", "tierLabel", "tierAccent",
-    "tierIndex", "codename", "tutorial"];
+    "tierIndex", "codename", "tutorial", "boss", "bossIndex", "bossName", "bossGlyph"];
 
   /** Обернуть «сырое» описание в полноценную Mission (с методами). */
   function wrap(raw) {
@@ -577,6 +842,11 @@
     TIERS: TIERS,
     TIER_BY_KEY: TIER_BY_KEY,
     templatesFor: templatesFor,
+    allTemplates: function () {
+      return TEMPLATES.map(function (t) {
+        return { id: t.id, tiers: t.tiers.slice(), concept: t.concept, codeLib: t.codeLib };
+      });
+    },
     wrap: wrap,
     growthFor: growthFor,
     preview: preview,
