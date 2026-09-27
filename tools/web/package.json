@@ -1,0 +1,13 @@
+{
+  "name": "crypto-hack-web-tools",
+  "private": true,
+  "type": "module",
+  "description": "Инструменты для браузерной версии: синхронизация контента и smoke-тест на jsdom",
+  "scripts": {
+    "sync": "python3 sync-data.py",
+    "test": "node smoke-test.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^27.0.0"
+  }
+}
