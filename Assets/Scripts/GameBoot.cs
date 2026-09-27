@@ -72,7 +72,11 @@ namespace CryptoHack
                 Game.Notify("Ввод недоступен", UiInput.ErrorMessage, "warn");
             }
 
-            ShowMainMenu();
+            // Новый игрок проходит путь как в браузерной версии: включение
+            // компьютера → браузер с логином → BIOS → рабочий стол.
+            // У кого есть сохранение с логином — сразу в меню.
+            if (Game.HasSave && Game.Onboarded) ShowMainMenu();
+            else ShowPowerOn();
         }
 
         /// <summary>
@@ -167,7 +171,18 @@ namespace CryptoHack
         }
 
         public void ShowMainMenu() { ShowScreen(new MainMenuScreen(this)); }
+        public void ShowPowerOn() { ShowScreen(new PowerOnScreen(this)); }
+        public void ShowLogin() { ShowScreen(new LoginScreen(this)); }
+
+        /// <summary>Экран BIOS: логин уже известен из LoginScreen.</summary>
         public void ShowBoot() { ShowScreen(new BootScreen(this)); }
+
+        public void ShowBoot(string login)
+        {
+            if (!string.IsNullOrEmpty(login)) Game.Login = login;
+            ShowScreen(new BootScreen(this));
+        }
+
         public void ShowDesktop() { ShowScreen(new DesktopScreen(this)); }
 
         void OnApplicationQuit()

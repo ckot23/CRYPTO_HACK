@@ -59,6 +59,7 @@ namespace CryptoHack
         Text _income;
         Text _taskBtc;
         Text _pyMode;
+        Text _operator;
         RectTransform _xpFill;
         float _xpBarW = 90f;
         float _clockTimer;
@@ -87,10 +88,16 @@ namespace CryptoHack
                 delegate { return new UpgradeWindowView(_game); }));
             _apps.Add(App("learn", "ШКОЛА PYTHON", "Школа Python", "✎", "pink", true,
                 delegate { return new LearnWindowView(_game); }));
-            _apps.Add(App("files", "ФАЙЛЫ // /home/ghost", "Файлы", "▶", "cyan", false,
+            _apps.Add(App("files", "ФАЙЛЫ // /home/" + OperatorName(), "Файлы", "▶", "cyan", false,
                 delegate { return new FilesWindowView(_game); }));
             _apps.Add(App("profile", "ПРОФИЛЬ ХАКЕРА", "Профиль", "★", "yellow", false,
                 delegate { return new ProfileWindowView(_game); }));
+        }
+
+        /// <summary>Имя оператора: логин из профиля либо «ghost» до входа.</summary>
+        string OperatorName()
+        {
+            return string.IsNullOrEmpty(_game.Login) ? "ghost" : _game.Login;
         }
 
         static AppDef App(string id, string title, string label, string icon, string colorKey, bool wide,
@@ -179,6 +186,9 @@ namespace CryptoHack
             _pyMode = Ui.Label(bar, _game.PythonModeText(), 10, Theme.TextMuted, TextAnchor.MiddleLeft, false, false);
             Ui.TopLeft(_pyMode.rectTransform, x + 4f, 0f, 210f, TopbarH);
 
+            _operator = Ui.Label(bar, "", 10, Theme.TextDim, TextAnchor.MiddleLeft, false, false);
+            Ui.TopLeft(_operator.rectTransform, x + 4f, 0f, 230f, TopbarH);
+
             RectTransform right = Ui.Node("Right", bar);
             Ui.TopRight(right, 12f, 0f, 560f, TopbarH);
 
@@ -251,7 +261,7 @@ namespace CryptoHack
             Ui.Full(bg.rectTransform);
             Ui.Border(bar, Theme.WithAlpha(Theme.Green, 0.25f));
 
-            _startButton = UiButton.New(bar, "⌁ GHOST", Theme.Green, 11, UiButton.Outline, 32f);
+            _startButton = UiButton.New(bar, "⌁ " + OperatorName().ToUpperInvariant(), Theme.Green, 11, UiButton.Outline, 32f);
             Ui.TopLeft(_startButton.Rt, 10f, 4f, 96f, 32f);
             _startButton.CustomLayer = Ui.LayerWindowBase + 290;
             _startButton.OnClick = ToggleStartMenu;
@@ -384,13 +394,20 @@ namespace CryptoHack
             }
             if (_taskBtc != null) _taskBtc.text = Fmt.Crypto(_game.GetCrypto("BTC")) + " BTC";
             if (_pyMode != null) _pyMode.text = _game.PythonModeText();
+            if (_operator != null)
+            {
+                _operator.text = "оператор: " + OperatorName() + " · боссов: " + _game.BossesDefeated()
+                    + "/" + BossCatalog.Count;
+            }
 
             for (int i = 0; i < _apps.Count; i++)
             {
                 AppDef a = _apps[i];
                 Text badge;
                 if (!_badges.TryGetValue(a.Id, out badge)) continue;
-                if (a.Id == "hack") badge.text = _game.CompletedMissions.Count + "/" + _game.Data.Missions.Count;
+                if (a.Id == "hack") badge.text = _game.Contracts.Count > 0
+                    ? _game.ContractsDone() + "/" + _game.Contracts.Count
+                    : (_game.TutorialDone() ? "0" : "1");
                 else if (a.Id == "learn") badge.text = _game.CompletedLessons.Count + "/" + _game.Data.Lessons.Count;
                 else if (a.Id == "miner") badge.text = _game.Miners.Count == 0 ? "" : _game.Miners.Count.ToString();
                 else badge.text = "";
@@ -454,7 +471,12 @@ namespace CryptoHack
             _startMenu = menu;
 
             RectTransform box = Ui.VBox(menu.Scroll.Content, 4f, 8);
-            Ui.Height(box.gameObject, 150f);
+            Ui.Height(box.gameObject, 172f);
+
+            Text who = Ui.Line(box, "оператор: " + OperatorName() + " · LV " + _game.Level
+                + " · боссов: " + _game.BossesDefeated() + "/" + BossCatalog.Count, 10, Theme.Cyan);
+            LayoutElement whoLe = who.gameObject.GetComponent<LayoutElement>();
+            if (whoLe != null) whoLe.flexibleWidth = 1f;
 
             MenuItem(box, "Звук: " + (_game.SoundOn ? "ВКЛ" : "ВЫКЛ"), delegate
             {
@@ -549,11 +571,13 @@ namespace CryptoHack
             RectTransform box = Ui.VBox(m.Card, 8f, 16);
             Ui.Full(box);
 
-            Text title = Ui.Line(box, "Добро пожаловать, ghost!", 20, Theme.Cyan, TextAnchor.MiddleLeft, true);
+            Text title = Ui.Line(box, "Добро пожаловать, " + OperatorName() + "!", 20, Theme.Cyan,
+                TextAnchor.MiddleLeft, true);
             Ui.Paragraph(box, "Это NeonOS — твоя хакерская ОС. Слева — программы, сверху — деньги и курсы, снизу — панель задач.\n" +
-                "1. Открой «Хак-терминал» и взломай первую цель.\n" +
-                "2. Поставь майнер на взломанный комп.\n" +
-                "3. Продавай крипту на бирже и покупай апгрейды.", 12, Theme.TextSoft, 500f);
+                "1. Открой «Хак-терминал» и пройди обучение.\n" +
+                "2. Дальше бери контракты: 4 сложности, задания собираются заново каждый раз.\n" +
+                "3. Закрывай контракты — откроются боссы: их четыре, награда в разы выше.\n" +
+                "4. Ставь майнеры, торгуй на бирже и покупай апгрейды.", 12, Theme.TextSoft, 500f);
 
             UiButton b = UiButton.New(box, "ПОГНАЛИ", Theme.Cyan, 13, UiButton.Solid, 36f);
             LayoutElement le = b.Rt.gameObject.GetComponent<LayoutElement>();

@@ -24,7 +24,7 @@
     var top = el("div", { cls: "top" },
       el("span", { cls: "status-online", text: "● NEON NET ONLINE" }),
       el("span", { cls: "label", text: "оператор: " + (game.displayName() || "неизвестен") }),
-      el("span", { cls: "right", text: "v1.0.6 · мягкий вид" })
+      el("span", { cls: "right", text: "v1.1.0 · мягкий вид" })
     );
 
     /* ------------------------------- центр -------------------------------- */

@@ -12,7 +12,8 @@ namespace CryptoHack
     /// </summary>
     public class HackWindowView : IWindowView
     {
-        const float ListW = 218f;
+        const float ListW = 238f;      // колонка целей: босс, сложность, список
+        const float SideH = 286f;      // высота блока со сложностями
         const float BodyH = 490f;
         const float TargetBarH = 36f;
         const float TabsH = 26f;
@@ -29,7 +30,9 @@ namespace CryptoHack
 
         readonly Game _game;
         UiWindow _win;
+        RectTransform _side;
         RectTransform _list;
+        Text _tierNote;
         RectTransform _tabRow;
         RectTransform _tabBox;
         Text _targetLabel;
@@ -68,17 +71,21 @@ namespace CryptoHack
             _win = win;
             UiWindow w = win;
 
-            // ---- колонка целей ----
+            // ---- колонка целей: босс, выбор сложности и список ----
             RectTransform left = Ui.Node("Missions", w.BodyHolder);
             Ui.TopLeft(left, 0f, 0f, ListW, BodyH);
-            Image leftBg = Ui.Img(left, Theme.PanelDeep, "Bg");
+            Image leftBg = Ui.Panel(left, Theme.WithAlpha(Theme.PanelDeep, 0.92f), Theme.RCard, "Bg");
             Ui.Full(leftBg.rectTransform);
 
-            Text head = Ui.Label(left, "ЦЕЛИ", 10, Theme.TextMuted, TextAnchor.MiddleLeft, false, false);
-            Ui.TopLeft(head.rectTransform, 10f, 6f, ListW - 20f, 16f);
+            _side = Ui.Node("Side", left);
+            Ui.TopLeft(_side, 8f, 8f, ListW - 16f, SideH);
 
-            _list = Ui.Node("List", left);
-            Ui.TopLeft(_list, 0f, 26f, ListW, BodyH - 26f);
+            Text head = Ui.Label(left, "ЦЕЛИ", 10, Theme.TextMuted, TextAnchor.MiddleLeft, true, false);
+            Ui.TopLeft(head.rectTransform, 10f, SideH + 10f, ListW - 20f, 16f);
+
+            UiScroll listScroll = Ui.Scroll(left, "MissionsScroll");
+            Ui.TopLeft(listScroll.View, 4f, SideH + 28f, ListW - 8f, BodyH - SideH - 34f);
+            _list = listScroll.Content;
 
             // ---- правая часть ----
             float rightW = win.Rt.sizeDelta.x - ListW;
@@ -183,7 +190,11 @@ namespace CryptoHack
         // ==================== СПИСОК ЦЕЛЕЙ ====================
         string ListSignature()
         {
-            return _game.CompletedMissions.Count + "|" + _game.Level + "|" + _game.Data.Missions.Count + "|" + _game.SelectedMission;
+            BossStatus status = _game.BossStatus();
+            return _game.CompletedMissions.Count + "|" + _game.Level + "|" + _game.UpgradeLevel("codeLib")
+                + "|" + _game.Contracts.Count + "|" + _game.SelectedMission + "|"
+                + (status.Boss == null ? "-" : status.Boss.Index + (status.Ready ? "+" : "-"))
+                + "|" + _game.BossesDefeated();
         }
 
         void RefreshList()
@@ -193,39 +204,286 @@ namespace CryptoHack
             _lastListSignature = sig;
 
             Ui.DestroyChildren(_list);
+            RefreshSide();
 
-            float rowH = 52f;
-            float y = 0f;
-            foreach (Mission m in _game.Data.Missions)
+            // 1. обучение — всегда первым
+            Mission tut = _game.Tutorial;
+            AddRow(tut, _game.TutorialDone()
+                ? "пройдено · повтор без награды"
+                : "обучение · вызываем первую функцию");
+
+            // 2. контракты: открытые выше, закрытые — в историю
+            List<Mission> open = new List<Mission>();
+            List<Mission> closed = new List<Mission>();
+            for (int i = 0; i < _game.Contracts.Count; i++)
             {
-                bool done = _game.IsMissionCompleted(m.Id);
-                bool unlocked = _game.MissionUnlocked(m);
-                Color accent = done ? Theme.Green : (unlocked ? Theme.Text : Theme.TextFaint);
-
-                string badge = done ? "✓" : (unlocked ? m.Id.ToString() : "✗");
-                string line2 = m.RewardCrypto + " +" + Fmt.Crypto(m.RewardAmount) + " · " + Fmt.Dollars((long)m.RewardDollars) + " · " + m.RewardXp + " XP";
-                string label = badge + "  " + m.Title + "\n" + line2;
-
-                int id = m.Id;
-                UiButton b = UiButton.New(_list, label, accent, 10, UiButton.Ghost, rowH - 2f);
-                Ui.TopLeft(b.Rt, 0f, y, ListW, rowH - 2f);
-                b.Caption.alignment = TextAnchor.MiddleLeft;
-                Ui.Stretch(b.Caption.rectTransform, 10f, 0f, 6f, 0f);
-                b.LayerProvider = delegate { return Btn(); };
-                b.OnClick = delegate { SelectMission(id); };
-
-                if (_mission != null && _mission.Id == m.Id)
-                {
-                    b.Kind = UiButton.Ghost;
-                    b.Refresh();
-                }
-                y += rowH;
+                Mission m = _game.ContractMission(_game.Contracts[i]);
+                if (m == null) continue;
+                if (_game.IsMissionCompleted(m.Id)) closed.Add(m);
+                else open.Add(m);
             }
+
+            for (int i = 0; i < open.Count; i++)
+            {
+                Mission m = open[i];
+                AddRow(m, m.TierLabel + " · защита " + m.Security + "% · +" + Fmt.Dollars((long)m.RewardDollars)
+                    + " · +" + Fmt.Crypto(m.RewardAmount) + " " + m.RewardCrypto);
+            }
+
+            if (closed.Count > 0)
+            {
+                Text divider = Ui.Line(_list, "ИСТОРИЯ · " + closed.Count, 9, Theme.TextFaint);
+                LayoutElement dle = divider.gameObject.GetComponent<LayoutElement>();
+                if (dle != null) dle.flexibleWidth = 1f;
+
+                for (int i = closed.Count - 1; i >= 0; i--)
+                {
+                    Mission m = closed[i];
+                    AddRow(m, "закрыт · " + m.Difficulty + " · " + m.TargetName);
+                }
+            }
+        }
+
+        /// <summary>Строка списка целей — как contractRow в браузерной версии.</summary>
+        void AddRow(Mission m, string subtitle)
+        {
+            bool done = _game.IsMissionCompleted(m.Id);
+            bool unlocked = _game.MissionUnlocked(m);
+            Color accent = done ? Theme.Green
+                : (unlocked ? (string.IsNullOrEmpty(m.TierAccent) ? Theme.Text : Theme.Hex(m.TierAccent)) : Theme.TextFaint);
+
+            string badge = done ? "✓" : (m.Boss ? "☠" : (unlocked ? "!" : "✗"));
+            string label = badge + "  " + m.Title + "\n" + subtitle;
+
+            int id = m.Id;
+            UiButton b = UiButton.New(_list, label, accent, 10, UiButton.Ghost, 46f);
+            Ui.Height(b.Rt.gameObject, 46f);
+            LayoutElement le = b.Rt.gameObject.GetComponent<LayoutElement>();
+            if (le != null) le.flexibleWidth = 1f;
+            b.Caption.alignment = TextAnchor.MiddleLeft;
+            Ui.Stretch(b.Caption.rectTransform, 12f, 0f, 6f, 0f);
+            b.LayerProvider = delegate { return Btn(); };
+            b.OnClick = delegate { SelectMission(id); };
+
+            // цветная полоска сложности слева
+            Color strip = string.IsNullOrEmpty(m.TierAccent) ? Theme.Cyan : Theme.Hex(m.TierAccent);
+            Image mark = Ui.Img(b.Rt, Theme.WithAlpha(strip, 0.9f), "TierMark");
+            Ui.TopLeft(mark.rectTransform, 0f, 0f, 3f, 46f);
+
+            if (_mission != null && _mission.Id == m.Id && b.Frame != null)
+            {
+                b.Frame.color = Theme.WithAlpha(strip, 0.85f);
+            }
+        }
+
+        // ==================== СЛОЖНОСТЬ И БОССЫ ====================
+        string _tierChoice = "easy";
+
+        string PreferredTier()
+        {
+            TierDef[] tiers = ContractGenerator.Tiers;
+            for (int i = tiers.Length - 1; i >= 0; i--)
+            {
+                if (_game.TierUnlocked(tiers[i].Key)) return tiers[i].Key;
+            }
+            return tiers[0].Key;
+        }
+
+        void RefreshSide()
+        {
+            if (_side == null) return;
+            if (!_game.TierUnlocked(_tierChoice)) _tierChoice = PreferredTier();
+
+            Ui.DestroyChildren(_side);
+            float y = 0f;
+
+            // ---- босс ----
+            BossStatus status = _game.BossStatus();
+            if (status.Boss != null)
+            {
+                BossData boss = status.Boss;
+                bool taken = _game.BossAccepted(boss.Index);
+                float h = taken || status.Ready ? 96f : 72f;
+
+                RectTransform box = Ui.Card(_side, Theme.WithAlpha(Theme.Pink, status.Ready && !taken ? 0.6f : 0.3f),
+                    Theme.WithAlpha(Theme.Pink, 0.06f), "BossBox");
+                Ui.TopLeft(box, 0f, y, ListW - 16f, h);
+
+                Text title = Ui.Label(box, boss.Glyph + (status.Ready ? "  БОСС ЖДЁТ ВЫЗОВА" : "  СЛЕДУЮЩИЙ БОСС"),
+                    10, Theme.Pink, TextAnchor.MiddleLeft, true, false);
+                Ui.TopLeft(title.rectTransform, 9f, 4f, ListW - 36f, 14f);
+
+                Text name = Ui.Label(box, boss.Name + " — " + boss.Subtitle, 9, Theme.Text,
+                    TextAnchor.MiddleLeft, false, false);
+                Ui.TopLeft(name.rectTransform, 9f, 19f, ListW - 36f, 14f);
+
+                Text note = Ui.Label(box, taken
+                        ? "вызов принят · цель в списке"
+                        : (status.Ready
+                            ? "защита " + boss.Security + "% · +" + Fmt.Dollars((long)boss.Dollars) + " · +"
+                              + Fmt.Crypto(boss.Amount) + " " + boss.Coin
+                            : status.Reason),
+                    9, Theme.TextDim, TextAnchor.MiddleLeft, false, false);
+                Ui.TopLeft(note.rectTransform, 9f, 33f, ListW - 36f, 14f);
+
+                if (taken)
+                {
+                    UiButton open = UiButton.New(box, "ОТКРЫТЬ ЦЕЛЬ", Theme.Pink, 10, UiButton.Outline, 24f);
+                    Ui.TopLeft(open.Rt, 9f, 48f, ListW - 36f, 24f);
+                    open.LayerProvider = delegate { return Btn(); };
+                    open.OnClick = delegate { SelectMission(boss.Id); };
+                }
+                else if (status.Ready)
+                {
+                    UiButton accept = UiButton.New(box, "ПРИНЯТЬ ВЫЗОВ", Theme.Pink, 10, UiButton.Solid, 24f);
+                    Ui.TopLeft(accept.Rt, 9f, 48f, ListW - 36f, 24f);
+                    accept.LayerProvider = delegate { return Btn(); };
+                    accept.OnClick = delegate { ConfirmBoss(boss); };
+                }
+
+                Text count = Ui.Label(box, "повержено боссов: " + _game.BossesDefeated() + "/" + BossCatalog.Count,
+                    9, Theme.TextFaint, TextAnchor.MiddleLeft, false, false);
+                Ui.TopLeft(count.rectTransform, 9f, h - 16f, ListW - 36f, 14f);
+
+                y += h + 4f;
+            }
+
+            // ---- сложность ----
+            Text head = Ui.Label(_side, "СЛОЖНОСТЬ КОНТРАКТА", 9, Theme.TextMuted, TextAnchor.MiddleLeft, true, false);
+            Ui.TopLeft(head.rectTransform, 2f, y, ListW - 16f, 14f);
+            y += 14f;
+
+            TierDef[] tiers = ContractGenerator.Tiers;
+            for (int i = 0; i < tiers.Length; i++)
+            {
+                TierDef tier = tiers[i];
+                bool unlocked = _game.TierUnlocked(tier.Key);
+                bool active = _tierChoice == tier.Key;
+                Color accent = Theme.Hex(tier.Accent);
+
+                ContractPreview preview = ContractGenerator.Preview(tier.Key, _game.ContractsDone());
+                string label = tier.Label + (unlocked ? "   +" + Fmt.Dollars(preview.Dollars) + " · +" + preview.Xp + " XP"
+                    : "   🔒 " + _game.TierRequirement(tier.Key));
+
+                UiButton chip = UiButton.New(_side, label, unlocked ? accent : Theme.TextFaint, 10,
+                    active && unlocked ? UiButton.Outline : UiButton.Ghost, 24f);
+                Ui.TopLeft(chip.Rt, 0f, y, ListW - 16f, 24f);
+                chip.LayerProvider = delegate { return Btn(); };
+                string key = tier.Key;
+                chip.OnClick = delegate
+                {
+                    if (!_game.TierUnlocked(key))
+                    {
+                        _game.Notify("Сложность закрыта", "Нужно: " + _game.TierRequirement(key), "warn");
+                        return;
+                    }
+                    _tierChoice = key;
+                    _lastListSignature = "";
+                    RefreshList();
+                    Sfx.UiClick();
+                };
+                if (active && unlocked && chip.Frame != null) chip.Frame.color = Theme.WithAlpha(accent, 0.9f);
+                y += 26f;
+            }
+
+            // ---- предпросмотр и кнопка контракта ----
+            TierDef chosen = ContractGenerator.Tier(_tierChoice) ?? tiers[0];
+            ContractPreview p = ContractGenerator.Preview(chosen.Key, _game.ContractsDone());
+            bool canTake = _game.TierUnlocked(chosen.Key);
+
+            Text reward = Ui.Label(_side, "защита " + chosen.Security[0] + "–" + chosen.Security[1] + "% · +$"
+                + p.Dollars + " · +" + p.Xp + " XP", 9, Theme.Yellow, TextAnchor.MiddleLeft, false, false);
+            Ui.TopLeft(reward.rectTransform, 2f, y, ListW - 16f, 14f);
+            y += 16f;
+
+            bool hasOpen = _game.ActiveContract() != null;
+            UiButton take = UiButton.New(_side, hasOpen ? "+ ЕЩЁ КОНТРАКТ" : "▶ ВЗЯТЬ КОНТРАКТ",
+                canTake ? Theme.Hex(chosen.Accent) : Theme.TextFaint, 11, UiButton.Solid, 28f);
+            Ui.TopLeft(take.Rt, 0f, y, ListW - 16f, 28f);
+            take.LayerProvider = delegate { return Btn(); };
+            take.OnClick = TakeContract;
+            y += 32f;
+
+            int openCount = 0;
+            List<Mission> all = _game.Missions();
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (i > 0 && !_game.IsMissionCompleted(all[i].Id)) openCount++;
+            }
+
+            _tierNote = Ui.Label(_side, !canTake
+                    ? "нужно: " + _game.TierRequirement(chosen.Key)
+                    : (openCount > 0
+                        ? "открытых контрактов: " + openCount + " · закрыто: " + _game.ContractsDone()
+                        : "следующий контракт будет сложности " + chosen.Label),
+                9, Theme.TextFaint, TextAnchor.UpperLeft, false, true);
+            Ui.TopLeft(_tierNote.rectTransform, 2f, y, ListW - 16f, 14f);
+        }
+
+        void TakeContract()
+        {
+            if (!_game.TutorialDone())
+            {
+                _game.Notify("Сначала обучение", "Пройди обучающую миссию — потом возьмём контракт.", "warn");
+                SelectMission(_game.Tutorial.Id);
+                return;
+            }
+            Mission created = _game.CreateContract(_tierChoice, 0);
+            if (created == null)
+            {
+                _game.Notify("Сложность закрыта", "Нужно: " + _game.TierRequirement(_tierChoice), "warn");
+                return;
+            }
+            Sfx.UiOpen();
+            _game.Notify("Новый контракт", created.Title + " · " + created.Difficulty, "info");
+            _lastListSignature = "";
+            SelectMission(created.Id);
+        }
+
+        void ConfirmBoss(BossData boss)
+        {
+            UiModal m = UiModal.New(Ui.ModalLayer, 600f, 330f, Theme.Pink, false);
+            m.CustomLayer = Ui.LayerModal;
+
+            RectTransform box = Ui.VBox(m.Card, 8f, 16);
+            Ui.Full(box);
+
+            Text title = Ui.Line(box, boss.Glyph + " " + boss.Name, 20, Theme.Pink, TextAnchor.MiddleCenter, true);
+            Text sub = Ui.Line(box, boss.Subtitle, 11, Theme.TextMuted, TextAnchor.MiddleCenter);
+            Ui.Paragraph(box, boss.Briefing, 12, Theme.TextSoft, 540f);
+            Text rewardLine = Ui.Line(box, "ЗАЩИТА " + boss.Security + "% · НАГРАДА: +" + Fmt.Crypto(boss.Amount) + " "
+                + boss.Coin + " · +" + Fmt.DollarsFull((long)boss.Dollars) + " · +" + boss.Xp + " XP", 11, Theme.Yellow);
+            Text note = Ui.Line(box, "Провал ничего не отнимает — можно пробовать сколько нужно.", 10, Theme.TextFaint);
+
+            UiButton ok = UiButton.New(box, "ПРИНЯТЬ ВЫЗОВ", Theme.Pink, 13, UiButton.Solid, 34f);
+            LayoutElement le = ok.Rt.gameObject.GetComponent<LayoutElement>();
+            if (le == null) le = ok.Rt.gameObject.AddComponent<LayoutElement>();
+            le.flexibleWidth = 1f;
+            ok.LayerProvider = delegate { return Ui.LayerModal; };
+            ok.OnClick = delegate
+            {
+                Mission created = _game.AcceptBoss();
+                m.Close();
+                if (created != null)
+                {
+                    Sfx.HackSuccess();
+                    _game.Notify("Вызов принят", created.Title + " · защита " + created.Security + "%", "err");
+                    _lastListSignature = "";
+                    SelectMission(created.Id);
+                }
+            };
+
+            UiButton later = UiButton.New(box, "позже", Theme.TextMuted, 12, UiButton.Outline, 30f);
+            LayoutElement lle = later.Rt.gameObject.GetComponent<LayoutElement>();
+            if (lle == null) lle = later.Rt.gameObject.AddComponent<LayoutElement>();
+            lle.flexibleWidth = 1f;
+            later.LayerProvider = delegate { return Ui.LayerModal; };
+            later.OnClick = delegate { m.Close(); };
         }
 
         void SelectMission(int id)
         {
-            Mission found = _game.Data.GetMission(id);
+            Mission found = _game.MissionById(id);
             if (found == null) found = _game.Data.Missions.Count > 0 ? _game.Data.Missions[0] : null;
             if (found == null) return;
             if (_mission != null && _mission.Id == found.Id && _editor != null) return;

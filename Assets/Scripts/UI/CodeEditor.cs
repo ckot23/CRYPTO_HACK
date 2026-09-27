@@ -592,6 +592,10 @@ namespace CryptoHack
         public int CustomLayer;
         public Color Accent = Theme.Cyan;
         public int MaxLength = 12;
+        /// <summary>Поле логина: разрешены буквы, цифры и _ . - (как в браузерной версии).</summary>
+        public bool AllowLetters;
+        /// <summary>Подпись справа внутри поля («$» у суммы, пусто — у логина).</summary>
+        public Text SuffixLabel;
 
         string _text = "";
         bool _focused;
@@ -636,8 +640,8 @@ namespace CryptoHack
             f.Caret.raycastTarget = false;
             f.Caret.enabled = false;
 
-            Text suffix = Ui.Label(rt, "$", 12, Theme.TextMuted, TextAnchor.MiddleRight, false, false);
-            Ui.TopRight(suffix.rectTransform, -8f, 0f, 20f, height);
+            f.SuffixLabel = Ui.Label(rt, "$", 12, Theme.TextMuted, TextAnchor.MiddleRight, false, false);
+            Ui.TopRight(f.SuffixLabel.rectTransform, -8f, 0f, 20f, height);
 
             Ui.Register(f);
             Ui.RegisterTick(f);
@@ -652,6 +656,13 @@ namespace CryptoHack
             if (Display != null) Display.text = _text;
             UpdateCaret();
             if (notify && OnChanged != null) OnChanged(_text);
+        }
+
+        /// <summary>Допустимый символ логина: буквы (рус/лат), цифры, _ . -</summary>
+        public static bool IsLoginChar(char c)
+        {
+            if (char.IsLetterOrDigit(c)) return true;
+            return c == '_' || c == '.' || c == '-';
         }
 
         public float Value
@@ -717,7 +728,7 @@ namespace CryptoHack
             {
                 char c = typed[i];
                 if (c < ' ') continue;
-                bool ok = char.IsDigit(c) || c == '.' || c == ',';
+                bool ok = AllowLetters ? IsLoginChar(c) : (char.IsDigit(c) || c == '.' || c == ',');
                 if (!ok || _text.Length >= MaxLength) continue;
                 _text += c;
                 changed = true;

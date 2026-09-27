@@ -84,21 +84,26 @@ namespace CryptoHack
 
         void BuildQueue(Game game)
         {
-            int missions = game.Data.Missions.Count;
             int lessons = game.Data.Lessons.Count;
             int upgrades = game.Data.Upgrades.Count;
             int cryptos = game.Data.Cryptos.Count;
+
+            string login = string.IsNullOrEmpty(game.Login) ? "ghost" : game.Login;
 
             _queue.Clear();
             _queue.Add("NEON BIOS v4.2.1 — POST OK");
             _queue.Add("CPU: quantum-core 4x5.2GHz · RAM: 64GB · GPU: n/a");
             _queue.Add("mount /dev/neo0 → /neon .............. OK");
-            _queue.Add("crypto modules: " + cryptos + " · missions: " + missions + " · upgrades: " + upgrades);
+            _queue.Add("crypto modules: " + cryptos + " · contracts: " + game.Contracts.Count
+                + " · upgrades: " + upgrades);
+            _queue.Add("набор заданий: " + ContractGenerator.AllTemplates().Length + " шаблонов · боссов: "
+                + BossCatalog.Count + " ..... OK");
             _queue.Add("loading school_db (" + lessons + " lessons) ..... OK");
             _queue.Add("starting net daemon ............... OK");
             _queue.Add("checking blacklist ............... CLEAN");
             _queue.Add("checking whitehat tracker ........ CLEAN");
-            _queue.Add("profile: level " + game.Level + " · xp " + game.Xp + " · $" + Fmt.Dollars((long)game.Dollars));
+            _queue.Add("operator: " + login + " · level " + game.Level + " · xp " + game.Xp
+                + " · $" + Fmt.Dollars((long)game.Dollars));
             _queue.Add("» всё готово. Добро пожаловать в NEON NET, хакер.");
             _totalLines = _queue.Count;
         }

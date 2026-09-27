@@ -51,10 +51,11 @@ namespace CryptoHack
             Ui.TopLeft(w.Rt, 48f + s, 72f + s, width, height);
 
             Image bg = w.Rt.gameObject.AddComponent<Image>();
-            bg.sprite = Theme.Solid;
-            bg.color = Theme.PanelDark;
+            bg.sprite = Theme.Window;
+            bg.type = Image.Type.Sliced;
+            bg.color = Theme.WithAlpha(Theme.PanelDark, 0.94f);
             bg.raycastTarget = false;
-            w.Frame = Ui.Border(w.Rt, Theme.WithAlpha(accent, 0.5f));
+            w.Frame = Ui.RoundBorder(w.Rt, Theme.WithAlpha(accent, 0.5f), Theme.RWindow);
 
             // ---- шапка ----
             w.Header = Ui.Node("Header", w.Rt);
@@ -65,9 +66,11 @@ namespace CryptoHack
             w.Header.offsetMax = Vector2.zero;
 
             w.HeaderBg = w.Header.gameObject.AddComponent<Image>();
-            w.HeaderBg.sprite = Theme.Solid;
+            w.HeaderBg.sprite = Theme.Button;
+            w.HeaderBg.type = Image.Type.Sliced;
             w.HeaderBg.color = Theme.PanelHead;
             w.HeaderBg.raycastTarget = false;
+            Ui.TopLight(w.Header, 0.05f);
 
             RectTransform underline = Ui.Node("Underline", w.Header);
             Ui.TopLeft(underline, 0f, HeaderHeight - 1f, width, 1f);

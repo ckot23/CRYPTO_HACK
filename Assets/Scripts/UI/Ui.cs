@@ -185,6 +185,47 @@ namespace CryptoHack
             return img;
         }
 
+        /// <summary>Панель со скруглёнными углами — мягкий вид вместо прямых углов.</summary>
+        public static Image Panel(RectTransform parent, Color color, int radius, string name = "Panel")
+        {
+            RectTransform rt = Node(name, parent);
+            Image img = rt.gameObject.AddComponent<Image>();
+            img.sprite = Theme.PanelFor(radius);
+            img.type = Image.Type.Sliced;
+            img.color = color;
+            img.raycastTarget = false;
+            return img;
+        }
+
+        /// <summary>Светлая кромка сверху — «стеклянный» блик на панели.</summary>
+        public static Image TopLight(RectTransform parent, float alpha)
+        {
+            RectTransform rt = Node("TopLight", parent);
+            rt.anchorMin = new Vector2(0f, 1f);
+            rt.anchorMax = new Vector2(1f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(-8f, 1f);
+            Image img = rt.gameObject.AddComponent<Image>();
+            img.sprite = Theme.Solid;
+            img.color = new Color(1f, 1f, 1f, alpha);
+            img.raycastTarget = false;
+            return img;
+        }
+
+        /// <summary>Скруглённая кайма: тот же цвет, что и у Border, но углы мягкие.</summary>
+        public static Image RoundBorder(RectTransform parent, Color color, int radius)
+        {
+            RectTransform rt = Node("Border", parent);
+            Image img = rt.gameObject.AddComponent<Image>();
+            img.sprite = Theme.BorderFor(radius);
+            img.type = Image.Type.Sliced;
+            img.color = color;
+            img.raycastTarget = false;
+            Full(rt);
+            return img;
+        }
+
         /// <summary>Рамка толщиной 1 «пиксель» (спрайт-кольцо + Image.Type.Sliced).</summary>
         public static Image Border(RectTransform parent, Color color)
         {
@@ -315,10 +356,12 @@ namespace CryptoHack
         {
             RectTransform rt = Node(name, parent);
             Image img = rt.gameObject.AddComponent<Image>();
-            img.sprite = Theme.Solid;
+            img.sprite = Theme.Card;
+            img.type = Image.Type.Sliced;
             img.color = bg;
             img.raycastTarget = false;
-            if (border.a > 0.001f) Border(rt, border);
+            TopLight(rt, 0.05f);
+            if (border.a > 0.001f) RoundBorder(rt, border, Theme.RCard);
             return rt;
         }
 

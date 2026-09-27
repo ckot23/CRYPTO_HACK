@@ -44,10 +44,11 @@ namespace CryptoHack
             Ui.Height(b.Rt.gameObject, height);
 
             b.Bg = b.Rt.gameObject.AddComponent<Image>();
-            b.Bg.sprite = Theme.Solid;
+            b.Bg.sprite = Theme.Button;
+            b.Bg.type = Image.Type.Sliced;
             b.Bg.raycastTarget = false;
 
-            if (kind != Ghost) b.Frame = Ui.Border(b.Rt, accent);
+            if (kind != Ghost) b.Frame = Ui.RoundBorder(b.Rt, accent, Theme.RSmall);
 
             b.Caption = Ui.Label(b.Rt, text, size, accent, TextAnchor.MiddleCenter, true, false);
             Ui.Full(b.Caption.rectTransform);
@@ -416,10 +417,12 @@ namespace CryptoHack
             m.Card.sizeDelta = new Vector2(width, height);
 
             Image bg = m.Card.gameObject.AddComponent<Image>();
-            bg.sprite = Theme.Solid;
+            bg.sprite = Theme.Window;
+            bg.type = Image.Type.Sliced;
             bg.color = Theme.PanelDark;
             bg.raycastTarget = false;
-            Ui.Border(m.Card, Theme.WithAlpha(accent, 0.6f));
+            Ui.TopLight(m.Card, 0.06f);
+            Ui.RoundBorder(m.Card, Theme.WithAlpha(accent, 0.6f), Theme.RWindow);
 
             // перехватываем клики «мимо» модалки, чтобы они не улетали в окна под ней
             UiBlocker.New(m.Rt, Ui.LayerModal - 1);
@@ -529,10 +532,11 @@ namespace CryptoHack
             t.Life = Lifetime;
 
             Image bg = t.Rt.gameObject.AddComponent<Image>();
-            bg.sprite = Theme.Solid;
+            bg.sprite = Theme.Window;
+            bg.type = Image.Type.Sliced;
             bg.color = Theme.WithAlpha(Theme.PanelDark, 0.97f);
             bg.raycastTarget = false;
-            t.Frame = Ui.Border(t.Rt, Theme.WithAlpha(accent, 0.75f));
+            t.Frame = Ui.RoundBorder(t.Rt, Theme.WithAlpha(accent, 0.75f), Theme.RWindow);
 
             float wrapWidth = CardWidth - 24f;
             RectTransform box = Ui.VBox(t.Rt, 2f, 10, 8, 10, 8);

@@ -18,9 +18,10 @@ namespace CryptoHack
 
         static readonly Achievement[] Achievements =
         {
-            new Achievement("Первый взлом", "Взломай первую цель"),
-            new Achievement("Серийный хакер", "Взломай 4 цели"),
-            new Achievement("Легенда даркнета", "Взломай все 8 целей"),
+            new Achievement("Первый взлом", "Пройди обучение"),
+            new Achievement("Серийный хакер", "Закрой 4 контракта"),
+            new Achievement("Легенда даркнета", "Закрой 10 контрактов"),
+            new Achievement("Гроза корпораций", "Повергни всех боссов"),
             new Achievement("Фермер", "Установи первый майнер"),
             new Achievement("Магнат", "Держи 4+ майнера"),
             new Achievement("Трейдер", "Соверши 5 сделок"),
@@ -62,7 +63,8 @@ namespace CryptoHack
 
         void Refresh()
         {
-            string sig = _game.Level + "|" + _game.Xp + "|" + (int)_game.Dollars + "|" + _game.TotalHacked +
+            string sig = _game.Level + "|" + _game.Xp + "|" + (int)_game.Dollars + "|" + _game.ContractsDone() +
+                "|" + _game.Contracts.Count + "|" + _game.BossesDefeated() + "|" + _game.Login +
                 "|" + _game.Miners.Count + "|" + _game.TotalTrades + "|" + _game.CompletedLessons.Count +
                 "|" + (int)_game.PortfolioValue();
             if (sig == _signature) return;
@@ -85,10 +87,12 @@ namespace CryptoHack
             Text avatar = Ui.Label(card, "⌁_", 26, Theme.Green, TextAnchor.MiddleCenter, false, false);
             Ui.TopLeft(avatar.rectTransform, 14f, 10f, 60f, 60f);
 
-            Text name = Ui.Label(card, "ghost", 14, Theme.Text, TextAnchor.UpperLeft, true, false);
+            Text name = Ui.Label(card, string.IsNullOrEmpty(_game.Login) ? "ghost" : _game.Login, 14,
+                Theme.Text, TextAnchor.UpperLeft, true, false);
             Ui.TopLeft(name.rectTransform, 84f, 12f, 240f, 20f);
-            Text status = Ui.Label(card, "статус: " + StatusText(), 11, Theme.TextDim, TextAnchor.UpperLeft, false, false);
-            Ui.TopLeft(status.rectTransform, 84f, 32f, 280f, 18f);
+            Text status = Ui.Label(card, "статус: " + StatusText() + " · контрактов закрыто: " + _game.ContractsDone(),
+                11, Theme.TextDim, TextAnchor.UpperLeft, false, false);
+            Ui.TopLeft(status.rectTransform, 84f, 32f, 400f, 18f);
 
             float p = Mathf.Clamp01(_game.XpProgress());
             RectTransform bar = Ui.Node("XpBar", card);
@@ -125,11 +129,15 @@ namespace CryptoHack
             rle.preferredHeight = 62f;
             rle.minHeight = 62f;
 
-            string[] values = { _game.TotalHacked.ToString(), _game.Miners.Count.ToString(), _game.TotalTrades.ToString(), _game.CompletedLessons.Count.ToString() };
-            string[] captions = { "ВЗЛОМОВ", "МАЙНЕРОВ", "СДЕЛОК", "УРОКОВ" };
-            Color[] colors = { Theme.Green, Theme.Cyan, Theme.Yellow, Theme.Pink };
+            string[] values =
+            {
+                _game.ContractsDone().ToString(), _game.BossesDefeated() + "/" + BossCatalog.Count,
+                _game.Miners.Count.ToString(), _game.TotalTrades.ToString(), _game.CompletedLessons.Count.ToString()
+            };
+            string[] captions = { "КОНТРАКТОВ", "БОССОВ", "МАЙНЕРОВ", "СДЕЛОК", "УРОКОВ" };
+            Color[] colors = { Theme.Green, Theme.Pink, Theme.Cyan, Theme.Yellow, Theme.Violet };
 
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < values.Length; i++)
             {
                 RectTransform cell = Ui.Card(row, Theme.White10, Theme.PanelBar, "Stat");
                 LayoutElement le = cell.gameObject.AddComponent<LayoutElement>();
@@ -152,7 +160,7 @@ namespace CryptoHack
             RectTransform card = Ui.Card(_body, Theme.White10, Theme.PanelDeep, "Achievements");
             LayoutElement le = card.gameObject.AddComponent<LayoutElement>();
             le.flexibleWidth = 1f;
-            float h = 46f + 4f * 50f;
+            float h = 46f + Achievements.Length * 50f;
             le.preferredHeight = h;
             le.minHeight = h;
 
@@ -182,9 +190,10 @@ namespace CryptoHack
             float total = _game.PortfolioValue() + _game.Dollars;
             return new bool[]
             {
-                _game.TotalHacked >= 1,
-                _game.TotalHacked >= 4,
-                _game.TotalHacked >= 8,
+                _game.TutorialDone(),
+                _game.ContractsDone() >= 4,
+                _game.ContractsDone() >= 10,
+                _game.BossesDefeated() >= BossCatalog.Count,
                 _game.Miners.Count >= 1,
                 _game.Miners.Count >= 4,
                 _game.TotalTrades >= 5,

@@ -50,7 +50,10 @@ namespace CryptoHack
             Text status = Ui.Label(top, "● NEON NET ONLINE", 11, Theme.Green, TextAnchor.MiddleLeft, true, false);
             Ui.TopLeft(status.rectTransform, 18f, 0f, 300f, 60f);
 
-            Text hint = Ui.Label(top, "v1.0.5 · UNITY 6.6 · UGUI C#", 11, Theme.TextMuted, TextAnchor.MiddleRight, false, false);
+            string login = game.Login;
+            if (string.IsNullOrEmpty(login)) login = "ghost";
+            Text hint = Ui.Label(top, "оператор: " + login + " · v1.1.0 · UNITY · UGUI C#", 11, Theme.TextMuted,
+                TextAnchor.MiddleRight, false, false);
             Ui.TopRight(hint.rectTransform, -18f, 0f, 320f, 60f);
 
             // ---------------- центр ----------------
@@ -73,7 +76,7 @@ namespace CryptoHack
                 14, Theme.Cyan, TextAnchor.MiddleCenter, false, false);
             Ui.TopLeft(subtitle.rectTransform, 0f, 76f, 1280f, 26f);
 
-            Text sub2 = Ui.Label(center, "8 миссий · 5 уроков · 4 апгрейда · одна легенда",
+            Text sub2 = Ui.Label(center, "23 шаблона заданий · 4 босса · 5 уроков · бесконечные контракты",
                 12, Theme.TextMuted, TextAnchor.MiddleCenter, false, false);
             Ui.TopLeft(sub2.rectTransform, 0f, 102f, 1280f, 22f);
 
@@ -88,8 +91,12 @@ namespace CryptoHack
             start.CustomLayer = Ui.LayerDesktop;
             start.OnClick = delegate
             {
-                if (!game.HasSave) game.Save();
-                _boot.ShowBoot();
+                if (game.HasSave) _boot.ShowDesktop();
+                else
+                {
+                    game.Save();
+                    _boot.ShowBoot();
+                }
             };
 
             UiButton help = UiButton.New(buttons, "КАК ИГРАТЬ", Theme.Cyan, 13, UiButton.Outline, 40f);
@@ -111,7 +118,7 @@ namespace CryptoHack
             // ---------------- фичи ----------------
             string[] features =
             {
-                "⌁  ВЗЛОМ — 8 миссий на Python",
+                "⌁  ВЗЛОМ — 23 шаблона заданий и 4 босса",
                 "⚙  МАЙНИНГ — пассивный доход с чужих ПК",
                 "▲  БИРЖА — живые курсы и комиссия",
                 "✎  ШКОЛА — 5 уроков с мини-тестами",
@@ -132,7 +139,7 @@ namespace CryptoHack
             Ui.TopLeft(_quote.rectTransform, 240f, 560f, 800f, 24f);
             RefreshQuote();
 
-            Text footer = Ui.Label(parent, "Сделано на Unity · весь код на C# · F1 — подсказка по управлению",
+            Text footer = Ui.Label(parent, "Сделано на Unity · весь код на C# · ESC — подсказка по управлению",
                 10, Theme.TextFaint, TextAnchor.MiddleCenter, false, false);
             Ui.TopLeft(footer.rectTransform, 0f, 660f, 1280f, 20f);
         }
@@ -163,11 +170,12 @@ namespace CryptoHack
 
             string[] steps =
             {
-                "1. Иконка ⌁ ХАК‐ТЕРМИНАЛ — выбери миссию слева.",
-                "2. Пиши код на Python в редакторе и жми ▶ ЗАПУСТИТЬ.",
-                "3. Соблюдай требования миссии — они во вкладке ПОДСКАЗКИ.",
-                "4. Награда: крипта, доллары, XP. XP повышает уровень.",
-                "5. Ставь майнеры (⚙) и торгуй на бирже (▲), чтобы расти.",
+                "1. Иконка ⌁ ХАК‐ТЕРМИНАЛ — сначала обучение, потом контракты.",
+                "2. Сложность выбираешь сам: ЛЕГКО → ЭКСПЕРТ, награда растёт вместе с ней.",
+                "3. Пиши код на Python в редакторе и жми ▶ ЗАПУСТИТЬ.",
+                "4. Соблюдай требования миссии — они во вкладке ПОДСКАЗКИ.",
+                "5. Закрывай контракты — цепочка откроет четырёх боссов.",
+                "6. Ставь майнеры (⚙) и торгуй на бирже (▲), чтобы расти.",
             };
             for (int i = 0; i < steps.Length; i++)
             {
