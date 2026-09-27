@@ -64,13 +64,13 @@
     return [
       "CPU: quantum-core 4x5.2GHz · RAM: 64GB · GPU: n/a",
       "mount /dev/neo0 → /neon .............. OK",
-      "crypto modules: " + g.Data.cryptos.length + " · missions: " + g.Data.missions.length +
+      "crypto modules: " + g.Data.cryptos.length + " · contracts: " + g.contracts.length +
         " · upgrades: " + g.Data.upgrades.length,
       "loading school_db (" + g.Data.lessons.length + " lessons) ..... OK",
       "starting net daemon ............... OK",
       "checking blacklist ............... CLEAN",
       "checking whitehat tracker ........ CLEAN",
-      "profile: level " + g.level + " · xp " + g.xp + " · $" + Fmt.int(g.dollars),
+      "operator: " + (g.login || "ghost") + " · level " + g.level + " · xp " + g.xp + " · $" + Fmt.int(g.dollars),
       "» всё готово. Добро пожаловать в NEON NET, хакер."
     ];
   };

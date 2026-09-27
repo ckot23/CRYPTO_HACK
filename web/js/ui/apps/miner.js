@@ -102,7 +102,7 @@
 
         function renderInstall() {
           CH.Dom.clear(installBox);
-          var free = game.Data.missions.filter(function (m) {
+          var free = game.missions().filter(function (m) {
             return game.isMissionCompleted(m.id) && !game.minersOn(m.id);
           });
 

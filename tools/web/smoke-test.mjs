@@ -1,10 +1,11 @@
 /* ==========================================================================
    smoke-test.mjs — проверка браузерной версии без браузера.
 
-   Поднимает страницу web/index.html на локальном HTTP-сервере, проходит
-   путь игрока (меню → загрузка BIOS → рабочий стол), открывает все семь
-   программ, решает первую миссию, ставит майнер, торгует, покупает апгрейд
-   и проверяет сохранение в localStorage. Падение любого шага — ошибка.
+   Поднимает страницу web/index.html на локальном HTTP-сервере и проходит
+   путь нового игрока: включение компьютера → приветствие браузера с логином
+   → загрузка NeonOS → рабочий стол. Дальше: семь программ, обучающая миссия,
+   генерация контрактов разных сложностей, награды, майнер, биржа, апгрейд
+   и сохранение. Падение любого шага — ошибка.
 
    Запуск:
        cd tools/web && npm install && npm test
@@ -49,8 +50,7 @@ const server = createServer(async (req, res) => {
   }
 });
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
-const port = server.address().port;
-const origin = `http://127.0.0.1:${port}`;
+const origin = `http://127.0.0.1:${server.address().port}`;
 
 /* ------------------------------ утилиты --------------------------------- */
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -78,7 +78,6 @@ const dom = await JSDOM.fromURL(`${origin}/index.html`, {
   beforeParse(window) {
     window.addEventListener("error", (e) => errors.push(String(e.error || e.message)));
     window.addEventListener("unhandledrejection", (e) => errors.push("promise: " + String(e.reason)));
-    // обработчики игровых событий ловят свои исключения сами — тоже считаем их ошибками
     const render = window.console.error;
     window.console.error = function (...args) {
       errors.push("console: " + args.map(String).join(" ").slice(0, 220));
@@ -97,107 +96,244 @@ const findButton = (...labels) =>
   [...doc.querySelectorAll("button")].find((b) => labels.some((l) => (b.textContent || "").includes(l)));
 
 async function run() {
-  await waitFor(() => doc.querySelector(".menu"));
-  check("главное меню отрисовано", !!doc.querySelector(".menu"));
-  check("заголовок и цитата на месте",
-    !!doc.querySelector(".title-glitch") && (doc.querySelector(".quote").textContent || "").length > 3);
+  /* ---------------- 1. включение компьютера и вход ---------------------- */
+  await waitFor(() => doc.querySelector(".power"));
+  check("стартовый экран — выключенный компьютер", !!doc.querySelector(".power-btn"));
 
-  // меню → загрузка BIOS
-  click(findButton("НАЧАТЬ ИГРУ", "ПРОДОЛЖИТЬ ВЗЛОМ"));
-  await waitFor(() => doc.querySelector(".boot"), 3000);
-  check("экран загрузки BIOS показан", !!doc.querySelector(".boot"));
+  click(doc.querySelector(".power-btn"));
+  await waitFor(() => doc.querySelector(".post-log .post-line"), 3000);
+  check("после кнопки питания идёт POST", doc.querySelectorAll(".post-log .post-line").length > 0);
 
-  // любая клавиша — пропустить
+  await waitFor(() => doc.querySelector(".browser"), 8000);
+  check("открылся браузер с приветствием", !!doc.querySelector(".browser-page"));
+  check("название игры крупно и по центру", !!doc.querySelector(".auth-title"),
+    (doc.querySelector(".auth-title") || {}).textContent);
+
+  const login = doc.querySelector("input.login-field");
+  check("есть поле логина", !!login);
+
+  // пустой логин — отказ
+  click(findButton("ВОЙТИ В СИСТЕМУ"));
+  await wait(80);
+  check("пустой логин не пускает", !!doc.querySelector(".login-field") && !!doc.querySelector(".auth"));
+
+  // кривой логин — тоже отказ
+  login.value = "a!";
+  click(findButton("ВОЙТИ В СИСТЕМУ"));
+  await wait(80);
+  check("некорректный логин отклонён", (doc.querySelector(".login-error") || {}).textContent.length > 0);
+
+  // нормальный логин
+  login.value = "neo";
+  click(findButton("ВОЙТИ В СИСТЕМУ"));
+  await waitFor(() => doc.querySelector(".boot"), 4000);
+  check("после входа идёт загрузка NeonOS", !!doc.querySelector(".boot"));
+  check("логин попал в профиль", window.CH.game.login === "neo");
+
+  /* ------------------------ 2. рабочий стол ----------------------------- */
   window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-  await waitFor(() => doc.querySelector(".desktop"), 6000);
+  await waitFor(() => doc.querySelector(".desktop"), 8000);
   check("рабочий стол появился", !!doc.querySelector(".desktop"));
   check("хак-терминал открылся сам", !!doc.querySelector(".mission-list"));
   check("тикеры курсов на месте (4 монеты)", doc.querySelectorAll(".ticker").length === 4);
   check("иконок программ семь", doc.querySelectorAll(".app-icon").length === 7);
-  check("панель задач и HUD отрисованы",
-    !!doc.querySelector(".taskbar") && /LV 1/.test(text()));
+  check("панель задач и HUD отрисованы", !!doc.querySelector(".taskbar") && /LV 1/.test(text()));
 
   const modal = doc.querySelector(".modal");
   if (modal) {
     const ok = [...modal.querySelectorAll("button")].find((b) => /ПОГНАЛИ|ЗАБРАТЬ/.test(b.textContent || ""));
     if (ok) click(ok);
-    await wait(50);
+    await wait(60);
     check("обучающая модалка закрывается", !doc.querySelector(".modal"));
   }
 
-  // горячие клавиши 2..7 открывают остальные программы
   for (let i = 2; i <= 7; i++) {
     window.dispatchEvent(new window.KeyboardEvent("keydown", { key: String(i), bubbles: true }));
     await wait(60);
   }
-  const opened = doc.querySelectorAll(".win").length;
-  check("открыты все семь окон", opened === 7, "окон: " + opened);
+  check("открыты все семь окон", doc.querySelectorAll(".win").length === 7,
+    "окон: " + doc.querySelectorAll(".win").length);
 
-  // Esc закрывает верхнее окно
   window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
   await wait(60);
   check("Esc закрывает верхнее окно", doc.querySelectorAll(".win").length === 6);
-
-  // возвращаем профиль (его закрыл Esc) для проверок содержимого
   window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "7", bubbles: true }));
   await wait(80);
 
   const game = window.CH.game;
   check("игра доступна из консоли (CH.game)", !!game);
 
-  // ---- решение первой миссии ----
+  /* ---------------- 3. список целей: обучение + контракты --------------- */
+  check("в игре одна обучающая миссия (id 1)", game.tutorial.id === 1 && game.Data.missions.length > 1);
+  check("до старта контрактов нет", game.contracts.length === 0);
+  check("в списке целей видно обучение", /ОБУЧЕНИЕ/.test(text()));
+  check("панель выбора сложности на месте", !!doc.querySelector(".tier-box") && doc.querySelectorAll(".tier-chip").length === 4);
+  check("сложности закрыты по уровню",
+    game.tierUnlocked("easy") && !game.tierUnlocked("medium") && !game.tierUnlocked("expert"));
+
+  /* ------------------------ 4. обучающая миссия ------------------------- */
   const area = doc.querySelector("textarea.input");
   check("редактор кода на месте", !!area);
-  const mission = game.Data.getMission(1);
-  area.value = mission.solution;
+  const tutorial = game.tutorial;
+  area.value = tutorial.solution;
   area.dispatchEvent(new window.Event("input", { bubbles: true }));
   click(findButton("ЗАПУСТИТЬ"));
   await waitFor(() => /ВЗЛОМ УСПЕШЕН/.test(text()), 12000);
-  check("миссия №1 взломана (симулятор)", /ВЗЛОМ УСПЕШЕН/.test(text()));
-  check("награда и XP начислены",
-    game.isMissionCompleted(1) && game.xp > 0, "XP: " + game.xp + ", уровень: " + game.level);
+  check("обучающая миссия взломана", /ВЗЛОМ УСПЕШЕН/.test(text()));
+  check("награда за обучение начислена", game.isMissionCompleted(1) && game.xp > 0, "XP: " + game.xp);
 
-  // ---- майнер ----
+  await wait(900);
+  check("после обучения выдан первый контракт", game.contracts.length === 1,
+    "контрактов: " + game.contracts.length);
+  const first = game.contracts.length ? game.contractMission(game.contracts[0]) : null;
+  check("контракт — цельная миссия с заданием и наградами",
+    !!first && !!first.task && !!first.solution && first.rewardDollars > 0 && first.requiredPatterns.length > 0,
+    first ? first.title : "—");
+  check("контракт сменил сложность на ЛЕГКО", first && first.tier === "easy", first ? first.difficulty : "");
+
+  /* ------------------------ 5. генератор контрактов --------------------- */
+  const Gen = window.CH.Generator;
+  check("четыре уровня сложности с разными наградами",
+    Gen.TIERS.length === 4 &&
+    Gen.TIERS[0].dollars[0] < Gen.TIERS[1].dollars[0] &&
+    Gen.TIERS[1].dollars[0] < Gen.TIERS[2].dollars[0] &&
+    Gen.TIERS[2].dollars[0] < Gen.TIERS[3].dollars[0]);
+  check("разные монеты по сложностям",
+    Gen.TIERS.map((t) => t.coin).join(",") === "BTC,ETH,XMR,SOL");
+  check("превью награды зависит от сложности",
+    Gen.preview("expert", 0).xp > Gen.preview("easy", 0).xp * 2,
+    "easy " + Gen.preview("easy", 0).xp + " XP · expert " + Gen.preview("expert", 0).xp + " XP");
+
+  const a1 = Gen.generate({ index: 5, tier: "medium", seed: 42, contractsDone: 4 });
+  const a2 = Gen.generate({ index: 5, tier: "medium", seed: 42, contractsDone: 4 });
+  const b1 = Gen.generate({ index: 6, tier: "medium", seed: 43, contractsDone: 4 });
+  check("генерация детерминирована по seed", a1.title === a2.title && a1.targetIp === a2.targetIp);
+  check("другой seed — другая цель", a1.title !== b1.title || a1.targetIp !== b1.targetIp,
+    a1.title + " / " + b1.title);
+  check("тема задания берётся из пула сложности", a1.tier === "medium" && a1.requiredPatterns.length > 0);
+  check("награда растёт с числом контрактов",
+    Gen.generate({ index: 9, tier: "easy", seed: 7, contractsDone: 20 }).rewardDollars >
+    Gen.generate({ index: 9, tier: "easy", seed: 7, contractsDone: 0 }).rewardDollars);
+  check("условия сложности соблюдаются",
+    Gen.generate({ index: 3, tier: "easy", seed: 11, contractsDone: 0 }).security <= 26 &&
+    Gen.generate({ index: 3, tier: "expert", seed: 11, contractsDone: 0 }).security >= 74);
+
+  /* --------------------- 6. генерация через игру ------------------------ */
+  game.addXp(400);                       // поднимаем уровень до 2
+  await wait(60);
+  check("второй уровень открыл СРЕДНЕ", game.tierUnlocked("medium"), "уровень " + game.level);
+  const medium = game.createContract("medium", 12345);
+  check("контракт средней сложности создан", !!medium && medium.tier === "medium");
+  check("контракты различаются по награде",
+    medium.rewardDollars !== first.rewardDollars || medium.rewardXp !== first.rewardXp,
+    "легко: $" + first.rewardDollars + " / средне: $" + medium.rewardDollars);
+
+  const contractsNow = game.contracts.length;
+  check("уровень всё ещё не пускает ЭКСПЕРТ", !game.tierUnlocked("expert"));
+  check("генерация через UI создаёт контракт",
+    (() => {
+      const btn = findButton("КОНТРАКТ");
+      if (!btn) return false;
+      click(btn);
+      return game.contracts.length === contractsNow + 1;
+    })(), "контрактов: " + game.contracts.length);
+  check("все цели видны в списке", game.missions().length === game.contracts.length + 1);
+
+  /* --------------------- 7. майнер, биржа, апгрейд ---------------------- */
   game.dollars = 10000;
-  const installed = game.installMiner(1, "BTC");
-  check("майнер установлен", installed && game.miners.length === 1);
+  check("майнер ставится на любую взломанную цель", game.installMiner(1, "BTC") && game.miners.length === 1);
   const before = game.getCrypto("BTC");
   for (let i = 0; i < 10; i++) game.tickMiners();
-  check("майнер добывает крипту", game.getCrypto("BTC") > before,
-    "BTC: " + game.getCrypto("BTC").toFixed(10));
+  check("майнер добывает крипту", game.getCrypto("BTC") > before, "BTC: " + game.getCrypto("BTC").toFixed(10));
+  check("майнер виден в списке свободных компов", game.missions().some((m) => m.id === 1));
 
-  // ---- биржа ----
   const usdBefore = game.dollars;
   check("покупка на бирже прошла", game.trade("BTC", 100, true) && game.totalTrades === 1);
-  check("доллары списались", game.dollars < usdBefore, "остаток: " + game.dollars.toFixed(0));
-
-  // ---- апгрейд ----
+  check("доллары списались", game.dollars < usdBefore);
   game.dollars = 10000;
   check("апгрейд куплен", game.buyUpgrade("stealth") && game.upgradeLevel("stealth") === 1);
   check("комиссия снизилась", Math.abs(game.fee() - 0.04) < 1e-6, "fee: " + game.fee());
 
-  // ---- сохранение ----
+  /* ---------------------------- 8. сохранение --------------------------- */
   game.save();
-  const raw = window.localStorage.getItem("cryptohack_save.json");
-  check("сейв лежит в localStorage", !!raw && JSON.parse(raw).completedMissions.includes(1));
-  check("код миссии сохраняется отдельно", !!window.localStorage.getItem("cryptohack_code.json"));
+  const raw = JSON.parse(window.localStorage.getItem("cryptohack_save.json"));
+  check("сейв лежит в localStorage", !!raw && raw.completedMissions.includes(1));
+  check("в сейве логин игрока", raw.login === "neo");
+  check("в сейве список контрактов", Array.isArray(raw.contracts) && raw.contracts.length === game.contracts.length);
+  check("контракты восстановились из сейва такими же", (() => {
+    const copy = JSON.parse(window.localStorage.getItem("cryptohack_save.json"));
+    const firstSaved = copy.contracts[0];
+    const rebuilt = Gen.generate({ index: firstSaved.n, tier: firstSaved.tier, seed: firstSaved.seed, contractsDone: 0 });
+    return rebuilt.title === first.title;
+  })());
 
-  // ---- симулятор: синтаксис и требования ----
-  const sim = window.CH.PySim;
-  check("синтаксис: пустой скрипт не проходит", sim.simulate("", mission, 0).missing.length > 0);
-  check("синтаксис: ловит пропущенное двоеточие", !!sim.checkSyntax("if x == 1\n    print(1)"));
-  check("требования миссии проверяются", sim.checkPatterns(mission.solution, mission).length === 0);
-  check("чужой код не проходит требования",
-    sim.checkPatterns("print('привет')", mission).length > 0);
-
-  // ---- содержимое программ ----
+  /* --------------------------- 9. содержимое --------------------------- */
   check("школа Python отрисовала уроки", !!doc.querySelector(".lesson-item"));
   check("биржа нарисовала график", !!doc.querySelector("canvas.chart"));
-  check("профиль показал достижения", doc.querySelectorAll(".ach").length === 8,
-    "ach: " + doc.querySelectorAll(".ach").length +
-    ", окна: " + [...doc.querySelectorAll(".win-title")].map((t) => t.textContent).join(" / "));
+  check("профиль показал достижения", doc.querySelectorAll(".ach").length === 8);
   check("файлы показали виртуальную ФС", /пароли\.txt/.test(text()));
   check("чёрный рынок показал 4 апгрейда", !!doc.querySelector(".upgrade-card"));
+
+  /* --------------------------- 10. симулятор --------------------------- */
+  const sim = window.CH.PySim;
+  check("синтаксис: пустой скрипт не проходит", sim.simulate("", tutorial, 0).missing.length > 0);
+  check("синтаксис: ловит пропущенное двоеточие", !!sim.checkSyntax("if x == 1\n    print(1)"));
+  check("требования обучении проверяются", sim.checkPatterns(tutorial.solution, tutorial).length === 0);
+  check("решение контракта проходит его требования",
+    sim.checkPatterns(first.solution, first).length === 0,
+    first ? first.template : "");
+  check("чужой код не проходит требования", sim.checkPatterns("print('привет')", tutorial).length > 0);
+
+  /* ------------- 11. все шаблоны генератора проходимы ------------------ */
+  let generated = 0, broken = [];
+  Gen.TIERS.forEach(function (tier) {
+    for (let seed = 1; seed <= 14; seed++) {
+      const m = Gen.generate({ index: seed, tier: tier.key, seed: seed * 7919, contractsDone: seed, codeLib: 3 });
+      generated++;
+      const result = sim.simulate(m.solution, m, 0);
+      if (!result.success) broken.push(m.template + " (" + m.concept + ")");
+      if (!m.task || !m.briefing || m.hints.length < 2 || m.theory.length < 2) broken.push("пустое описание " + m.title);
+    }
+  });
+  check("56 сгенерированных контрактов проходимы своими решениями", broken.length === 0,
+    generated + " шт." + (broken.length ? ", сломано: " + broken.slice(0, 3).join(", ") : ""));
+
+  check("тексты заданий заполнены во всех шаблонах", (() => {
+    const seen = new Set();
+    Gen.TIERS.forEach((tier) => {
+      for (let seed = 1; seed <= 30; seed++) {
+        const m = Gen.generate({ index: seed, tier: tier.key, seed: seed * 104729, contractsDone: 0, codeLib: 3 });
+        seen.add(m.concept);
+        if (!m.task.includes("\n") && m.task.length < 20) return false;
+      }
+    });
+    return seen.size >= 12;
+  })(), "разных типов заданий: " + (() => {
+    const seen = new Set();
+    Gen.TIERS.forEach((tier) => {
+      for (let seed = 1; seed <= 30; seed++) {
+        seen.add(Gen.generate({ index: seed, tier: tier.key, seed: seed * 104729, contractsDone: 0, codeLib: 3 }).concept);
+      }
+    });
+    return seen.size;
+  })());
+
+  /* ------------- 12. совместимость со старым сейвом ------------------- */
+  window.localStorage.setItem("cryptohack_save.json", JSON.stringify({
+    version: 1, dollars: 500, xp: 10, level: 3,
+    completedMissions: [1, 2, 3], completedLessons: [1], miners: [],
+    upgrades: { hackSpeed: 1 }, crypto: { BTC: 0.5 },
+    totalHacked: 3, totalEarnedDollars: 200, totalTrades: 2,
+    selectedMission: 2, soundOn: true, realPython: false
+  }));
+  const legacyOk = game.loadSave();
+  check("старый сейв (8 ручных миссий) подхватывается",
+    legacyOk && game.level === 3 && game.tutorialDone() && game.contracts.length === 0,
+    "уровень " + game.level);
+  check("после старого сейва сложности открываются по уровню",
+    game.tierUnlocked("easy") && game.tierUnlocked("medium") && !game.tierUnlocked("expert"));
+  check("после старого сейва можно взять новый контракт",
+    !!game.createContract("medium", 999) && game.contracts.length === 1);
 
   check("нет ошибок JS на странице", errors.length === 0, errors.slice(0, 3).join(" | "));
 }

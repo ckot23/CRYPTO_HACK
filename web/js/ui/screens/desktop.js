@@ -92,7 +92,7 @@
 
     /* ---------------------------- панель задач ---------------------------- */
     this.startBtn = UI.button({
-      text: "⌁ GHOST", accent: "#00ff9d", kind: "outline", height: 32,
+      text: "⌁ " + (game.displayName() || "ghost").toUpperCase(), accent: "#00ff9d", kind: "outline", height: 32,
       onClick: function () { self.toggleStartMenu(); }
     });
     this.startBtn.style.width = "96px";
@@ -238,7 +238,9 @@
       : "";
     this.btcLabel.textContent = Fmt.crypto(game.getCrypto("BTC")) + " BTC";
 
-    this.badges.hack.textContent = game.completedMissions.length + "/" + game.Data.missions.length;
+    this.badges.hack.textContent = game.contracts.length
+      ? game.contractsDone() + "/" + game.contracts.length
+      : (game.tutorialDone() ? "0" : "1");
     this.badges.learn.textContent = game.completedLessons.length + "/" + game.Data.lessons.length;
     this.badges.miner.textContent = game.miners.length ? String(game.miners.length) : "";
   };
@@ -339,10 +341,10 @@
       el("div", {
         style: { "font-size": "12px", color: "#b9c7dd", "white-space": "pre-wrap" },
         text: "Это NeonOS — твоя хакерская ОС. Слева программы, сверху деньги и курсы, снизу панель задач.\n" +
-          "1. Открой «Хак-терминал» и взломай первую цель.\n" +
-          "2. Поставь майнер на взломанный комп.\n" +
-          "3. Продавай крипту на бирже и покупай апгрейды на чёрном рынке.\n" +
-          "4. Учись в школе Python — это даёт XP и открывает миссии."
+          "1. Пройди обучение в «Хак-терминале» — это единственная ручная миссия.\n" +
+          "2. Дальше бери контракты: выбери сложность слева внизу — чем сложнее, тем выше награда.\n" +
+          "3. Ставь майнеры на взломанные компы — доход капает каждую секунду.\n" +
+          "4. Продавай крипту на бирже, качай апгрейды и учись в школе Python."
       })
     );
     UI.modal({

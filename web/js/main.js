@@ -27,12 +27,39 @@
   }
 
   var flow = {
+    /* Питание → браузер с логином → загрузка NeonOS → рабочий стол.
+       Меню — точка входа для тех, кто уже играл. */
     showMenu: function () {
       swapScreen(function () {
         return new CH.Screens.MainMenu(host, {
           game: game,
-          onStart: function () { flow.showBoot(); },
+          onStart: function () {
+            // новый профиль проходит знакомство целиком: включение ПК и вход
+            if (game.login) flow.showBoot();
+            else flow.showPowerOn();
+          },
           onReset: function () { flow.showMenu(); }
+        });
+      });
+    },
+
+    showPowerOn: function () {
+      swapScreen(function () {
+        return new CH.Screens.PowerOn(host, {
+          login: game.login || "оператор",
+          onDone: function () { flow.showAuth(); }
+        });
+      });
+    },
+
+    showAuth: function () {
+      swapScreen(function () {
+        return new CH.Screens.Auth(host, {
+          game: game,
+          onDone: function (login) {
+            CH.UI.toast("Добро пожаловать, " + login, "Сеанс оператора открыт", "ok");
+            flow.showBoot();
+          }
         });
       });
     },
@@ -83,6 +110,9 @@
     // тосты от игры — в общий слой уведомлений
     game.on("toast", function (title, text, kind) { CH.UI.toast(title, text, kind); });
 
+    // героя зовут так, как он представился на экране входа
+    game.displayName = function () { return game.login || "ghost"; };
+
     // весь игровой цикл идёт через общий тикер (один requestAnimationFrame)
     CH.Ticker.add(function (dt) { game.tick(dt); });
     CH.Ticker.start();
@@ -104,7 +134,9 @@
       });
     }
 
-    flow.showMenu();
+    // новый игрок видит, как включается компьютер; вернувшийся — меню
+    if (game.hasSave) flow.showMenu();
+    else flow.showPowerOn();
   }
 
   if (root.document.readyState === "loading") {

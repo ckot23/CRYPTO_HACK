@@ -94,5 +94,14 @@
 
   Sfx.trade = function () { beep(760, 0.07, "sine", 0.3, 0); };
 
+  /** Щелчок питания и раскрутка вентиляторов. */
+  Sfx.powerOn = function () {
+    beep(90, 0.06, "square", 0.35, 0);        // реле
+    beep(55, 0.5, "sawtooth", 0.06, 0.12);    // гул кулеров
+    beep(180, 0.09, "square", 0.12, 0.2);     // тест динамика
+    beep(1200, 0.04, "square", 0.1, 0.32);
+    beep(1600, 0.05, "square", 0.1, 0.4);
+  };
+
   CH.Sfx = Sfx;
 })(typeof globalThis !== "undefined" ? globalThis : this);

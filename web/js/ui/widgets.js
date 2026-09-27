@@ -49,6 +49,7 @@
     var node = el("button", {
       cls: cls,
       title: opts.title,
+      attrs: { type: "button" },        // формы не должны отправляться «случайно»
       style: {
         "--accent": accent,
         "--accent-hover": lighten(accent, 0.35),

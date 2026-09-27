@@ -80,7 +80,7 @@
           list.push({ folder: "docs", name: "пароли.txt", content: PASSWORDS, color: "#00e5ff" });
           list.push({ folder: "docs", name: "шпаргалка_python.txt", content: CHEATSHEET, color: "#00e5ff" });
 
-          game.Data.missions.forEach(function (m) {
+          game.missions().forEach(function (m) {
             if (!game.isMissionCompleted(m.id)) return;
             var code = CH.CodeStore.get(m.id, m.solution);
             list.push({

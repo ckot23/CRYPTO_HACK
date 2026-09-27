@@ -93,6 +93,11 @@
     this.totalEarnedDollars = 0;
     this.totalTrades = 0;
 
+    /* ---- игрок ---- */
+    this.login = "";             // ник, который вводят на экране приветствия
+    this.tutorial = this.makeTutorial();
+    this.contracts = [];         // [{n, tier, seed}] — сгенерированные цели
+
     /* ---- настройки ---- */
     this.onboarded = false;      // показывалась ли новичку вводная
     this.soundOn = true;
@@ -226,7 +231,105 @@
   };
 
   /* ============================= МИССИИ ================================== */
+  /** Обучающая миссия — единственная «ручная» цель в игре (из gamedata.json). */
+  Game.prototype.makeTutorial = function () {
+    var src = (this.Data.missions && this.Data.missions[0]) || {};
+    var m = new CH.Mission(src);            // копия с методами (requirementsText и др.)
+    m.tutorial = true;
+    m.difficulty = "ОБУЧЕНИЕ";
+    m.tierAccent = "#00e5ff";
+    m.title = "ОБУЧЕНИЕ · " + (m.title || "Первый скан");
+    return m;
+  };
+
+  /** Все доступные цели: обучение + сгенерированные контракты. */
+  Game.prototype.missions = function () {
+    var self = this;
+    return [this.tutorial].concat(this.contracts.map(function (c) { return self.contractMission(c); }));
+  };
+
+  /** Восстановить объект миссии из компактной записи сейва. */
+  Game.prototype.contractMission = function (record) {
+    if (!record.mission) {
+      record.mission = CH.Generator.generate({
+        index: record.n,
+        tier: record.tier,
+        seed: record.seed,
+        contractsDone: record.n - 1,
+        codeLib: this.upgradeLevel("codeLib")
+      });
+    }
+    return record.mission;
+  };
+
+  Game.prototype.getMission = function (id) {
+    id = Number(id);
+    if (this.tutorial && this.tutorial.id === id) return this.tutorial;
+    for (var i = 0; i < this.contracts.length; i++) {
+      var m = this.contractMission(this.contracts[i]);
+      if (m.id === id) return m;
+    }
+    return this.Data.getMission(id);          // на случай старых сейвов
+  };
+
+  /** Сколько контрактов игрок уже закрыл (без обучения). */
+  Game.prototype.contractsDone = function () {
+    var self = this;
+    return this.contracts.filter(function (c) { return self.isMissionCompleted(c.mission.id); }).length;
+  };
+
+  /** Последний сгенерированный, но ещё не взломанный контракт. */
+  Game.prototype.activeContract = function () {
+    for (var i = this.contracts.length - 1; i >= 0; i--) {
+      var m = this.contractMission(this.contracts[i]);
+      if (!this.isMissionCompleted(m.id)) return m;
+    }
+    return null;
+  };
+
+  Game.prototype.tutorialDone = function () {
+    return this.isMissionCompleted(this.tutorial.id);
+  };
+
+  /** Доступна ли сложность: уровень + библиотека кода. */
+  Game.prototype.tierUnlocked = function (tierKey) {
+    var t = CH.Generator.TIER_BY_KEY[tierKey];
+    if (!t) return false;
+    return this.level >= t.minLevel && this.upgradeLevel("codeLib") >= t.codeLib;
+  };
+
+  Game.prototype.tierRequirement = function (tierKey) {
+    var t = CH.Generator.TIER_BY_KEY[tierKey];
+    if (!t) return "";
+    var parts = [];
+    if (this.level < t.minLevel) parts.push("уровень " + t.minLevel);
+    if (this.upgradeLevel("codeLib") < t.codeLib) parts.push("библиотека кода ур. " + t.codeLib);
+    return parts.join(" · ");
+  };
+
+  /**
+   * Сгенерировать новый контракт выбранной сложности.
+   * Возвращает миссию или null, если сложность ещё закрыта.
+   */
+  Game.prototype.createContract = function (tierKey, seedOverride) {
+    if (!this.tierUnlocked(tierKey)) return null;
+    if (!this.tutorialDone()) return null;        // сначала обучение
+    var n = this.contracts.length + 1;
+    var seed = seedOverride === undefined
+      ? Math.floor(Math.random() * 0x7fffffff)
+      : (seedOverride | 0);
+    var record = { n: n, tier: tierKey, seed: seed };
+    this.contracts.push(record);
+    var mission = this.contractMission(record);
+    this.selectedMission = mission.id;
+    this.emit("state");
+    this.save();
+    return mission;
+  };
+
   Game.prototype.missionUnlocked = function (m) {
+    if (!m) return false;
+    if (m.tutorial) return true;
     return this.level >= m.requiredLevel && this.upgradeLevel("codeLib") >= m.requiredCodeLib;
   };
 
@@ -249,8 +352,10 @@
     this.emit("mission", m, stars || 0);
     this.addXp(m.rewardXp);
 
-    if (m.id === this.Data.missions.length && this.Data.missions.length > 0) {
-      this.notify("ТЫ — ЛЕГЕНДА!", "Все цели взломаны. Дата-центр твой. Майни и богатей!", "gold");
+    // вехи за длинную серию контрактов
+    var done = this.contractsDone();
+    if (m.generated && done > 0 && done % 5 === 0) {
+      this.notify("СЕРИЯ " + done, "Пять контрактов закрыто. Сложность можно поднять — награда выше.", "gold");
     }
     this.save();
   };
@@ -274,7 +379,7 @@
       this.notify("Нет денег", "Продай крипту на бирже.", "err");
       return false;
     }
-    var m = this.Data.getMission(missionId);
+    var m = this.getMission(missionId);
     if (!m) return false;
 
     this.dollars -= cost;
@@ -457,6 +562,8 @@
         crypto: this.crypto,
         xp: this.xp,
         level: this.level,
+        login: this.login,
+        contracts: this.contracts.map(function (c) { return { n: c.n, tier: c.tier, seed: c.seed }; }),
         completedMissions: this.completedMissions.slice(),
         miners: this.miners.map(function (m) {
           return { id: m.id, missionId: m.missionId, pcName: m.pcName, ip: m.ip, crypto: m.crypto, earned: m.earned };
@@ -494,6 +601,13 @@
       if (typeof dto.level === "number") this.level = Math.max(1, dto.level);
       if (typeof dto.soundOn === "boolean") this.soundOn = dto.soundOn;
       if (typeof dto.onboarded === "boolean") this.onboarded = dto.onboarded;
+      if (typeof dto.login === "string") this.login = dto.login;
+      // контракты всегда перечитываются из сейва (в старых сейвах их просто нет)
+      this.contracts = Array.isArray(dto.contracts)
+        ? dto.contracts.filter(function (c) { return c && c.tier; }).map(function (c) {
+          return { n: Number(c.n) || 1, tier: String(c.tier), seed: Number(c.seed) | 0 };
+        })
+        : [];
       if (typeof dto.realPython === "boolean") this.realPython = dto.realPython;
       if (typeof dto.selectedMission === "number") this.selectedMission = dto.selectedMission;
       if (typeof dto.totalHacked === "number") this.totalHacked = dto.totalHacked;
@@ -549,6 +663,8 @@
     this.selectedMission = 1;
     this.hasSave = false;
     this.onboarded = false;
+    this.login = "";
+    this.contracts = [];
     this.initMarket();
     this.emit("state");
     this.emit("prices");

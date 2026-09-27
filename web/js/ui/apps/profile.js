@@ -11,9 +11,9 @@
   var Fmt = CH.Fmt;
 
   var ACHIEVEMENTS = [
-    { name: "Первый взлом", desc: "Взломай первую цель", check: function (g) { return g.totalHacked >= 1; } },
-    { name: "Серийный хакер", desc: "Взломай 4 цели", check: function (g) { return g.totalHacked >= 4; } },
-    { name: "Легенда даркнета", desc: "Взломай все 8 целей", check: function (g) { return g.totalHacked >= 8; } },
+    { name: "Первый взлом", desc: "Пройди обучение", check: function (g) { return g.tutorialDone(); } },
+    { name: "Серийный хакер", desc: "Закрой 4 контракта", check: function (g) { return g.contractsDone() >= 4; } },
+    { name: "Легенда даркнета", desc: "Закрой 10 контрактов", check: function (g) { return g.contractsDone() >= 10; } },
     { name: "Фермер", desc: "Установи первый майнер", check: function (g) { return g.miners.length >= 1; } },
     { name: "Магнат", desc: "Держи 4+ майнера", check: function (g) { return g.miners.length >= 4; } },
     { name: "Трейдер", desc: "Соверши 5 сделок", check: function (g) { return g.totalTrades >= 5; } },
@@ -46,7 +46,7 @@
           return el("div", { cls: "profile-card" },
             el("div", { cls: "avatar", text: "⌁_" }),
             el("div", {},
-              el("div", { cls: "b", style: { "font-size": "14px" }, text: "ghost" }),
+              el("div", { cls: "b", style: { "font-size": "14px" }, text: game.displayName() }),
               el("div", { cls: "label", text: "статус: " + statusText() }),
               el("div", { style: { "margin-top": "10px" }, text: "" }, xpBar),
               el("div", { cls: "label", style: { "margin-top": "6px" }, text: game.xp + " / " + game.xpForLevel(game.level) + " XP" })

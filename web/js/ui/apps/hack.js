@@ -30,6 +30,7 @@
         var mission = null;
         var tab = "brief";
         var showSolution = false;
+        var tierChoice = preferredTier();          // какую сложность выберет игрок
         var running = false;
         var runTimer = null;
         var unsubscribe = [];
@@ -37,8 +38,9 @@
 
         /* ---------------------------- разметка ---------------------------- */
         var missionItems = el("div", { cls: "items scroll" });
+        var tierBox = el("div", { cls: "tier-box" });
         var missionList = el("div", { cls: "mission-list" },
-          el("div", { cls: "head", text: "ЦЕЛИ" }), missionItems);
+          el("div", { cls: "head", text: "ЦЕЛИ" }), missionItems, tierBox);
 
         var targetName = el("div", { cls: "name", text: "—" });
         var targetMeta = el("div", { cls: "meta", text: "" });
@@ -82,27 +84,136 @@
         layout.style.height = "100%";
         body.appendChild(layout);
 
-        /* ------------------------- список миссий -------------------------- */
+        /* ---------------------- сложность контрактов ----------------------- */
+        // по умолчанию предлагаем самую выгодную из доступных
+        function preferredTier() {
+          var unlocked = CH.Generator.TIERS.filter(function (t) { return game.tierUnlocked(t.key); });
+          return unlocked.length ? unlocked[unlocked.length - 1].key : "easy";
+        }
+
+        function tierChip(t) {
+          var unlocked = game.tierUnlocked(t.key);
+          var active = tierChoice === t.key;
+          var chip = UI.button({
+            text: t.label,
+            accent: unlocked ? t.accent : "#3a4a63",
+            kind: active ? "solid" : "outline",
+            height: 22,
+            cls: "tier-chip" + (active ? " active" : "") + (unlocked ? "" : " locked"),
+            title: unlocked ? t.blurb : ("нужно: " + game.tierRequirement(t.key)),
+            onClick: function () {
+              if (!unlocked) {
+                UI.toast("Сложность закрыта", "Нужно: " + game.tierRequirement(t.key), "warn");
+                return;
+              }
+              tierChoice = t.key;
+              refreshTierBox();
+            }
+          });
+          return chip;
+        }
+
+        function refreshTierBox() {
+          CH.Dom.clear(tierBox);
+          if (!game.tierUnlocked(tierChoice)) tierChoice = preferredTier();
+
+          tierBox.appendChild(el("div", { cls: "tier-title", text: "СЛОЖНОСТЬ КОНТРАКТА" }));
+          var chips = el("div", { cls: "tier-chips" });
+          CH.Generator.TIERS.forEach(function (t) { chips.appendChild(tierChip(t)); });
+          tierBox.appendChild(chips);
+
+          var p = CH.Generator.preview(tierChoice, game.contractsDone());
+          var tier = CH.Generator.TIER_BY_KEY[tierChoice];
+          tierBox.appendChild(el("div", { cls: "tier-preview" },
+            el("div", { text: "защита цели " + tier.security[0] + "–" + tier.security[1] + "%" }),
+            el("div", { cls: "reward", text: "+" + Fmt.crypto(p.amount) + " " + p.coin + " · +" +
+              Fmt.dollars(p.dollars) + " · +" + p.xp + " XP" })
+          ));
+
+          var active = game.activeContract();
+          var btn = UI.button({
+            text: active ? "+ ЕЩЁ КОНТРАКТ" : "▶ ВЗЯТЬ КОНТРАКТ",
+            accent: tier.accent,
+            kind: "solid",
+            height: 30,
+            onClick: function () {
+              if (!game.tutorialDone()) {
+                UI.toast("Сначала обучение", "Пройди обучающую миссию — потом возьмём контракт.", "warn");
+                selectMission(game.tutorial.id);
+                return;
+              }
+              var created = game.createContract(tierChoice);
+              if (!created) {
+                UI.toast("Сложность закрыта", "Нужно: " + game.tierRequirement(tierChoice), "warn");
+                return;
+              }
+              CH.Sfx.uiOpen();
+              UI.toast("Новый контракт", created.title + " · " + created.difficulty, "info");
+              selectMission(created.id);
+            }
+          });
+          btn.style.width = "100%";
+          tierBox.appendChild(btn);
+          var openCount = game.contracts.filter(function (rec) {
+            return !game.isMissionCompleted(game.contractMission(rec).id);
+          }).length;
+          tierBox.appendChild(el("div", {
+            cls: "tier-note",
+            text: !game.tierUnlocked(tierChoice)
+              ? "нужно: " + game.tierRequirement(tierChoice)
+              : (openCount
+                ? "открытых контрактов: " + openCount + " · закрыто: " + game.contractsDone()
+                : "следующий контракт будет сложности " + tier.label)
+          }));
+        }
+
+        /* ------------------------- список целей ---------------------------- */
+        function contractRow(m, subtitle) {
+          var done = game.isMissionCompleted(m.id);
+          var unlocked = game.missionUnlocked(m);
+          var cls = "mission-item" + (done ? " done" : "") + (unlocked ? "" : " locked") +
+            (mission && mission.id === m.id ? " active" : "");
+          var badge = done ? "✓" : (unlocked ? "!" : "✗");
+          var btn = UI.button({
+            text: badge + "  " + m.title + "\n" + subtitle,
+            accent: done ? "#00ff9d" : (unlocked ? (m.tierAccent || "#d7e3f4") : "#3a4a63"),
+            kind: "ghost",
+            cls: cls,
+            style: { height: "50px", "align-items": "center", "border-left": "2px solid " + (m.tierAccent || "#00e5ff") },
+            onClick: function () { selectMission(m.id); }
+          });
+          return btn;
+        }
+
         function refreshMissionList() {
           CH.Dom.clear(missionItems);
-          game.Data.missions.forEach(function (m) {
-            var done = game.isMissionCompleted(m.id);
-            var unlocked = game.missionUnlocked(m);
-            var cls = "mission-item" + (done ? " done" : "") + (unlocked ? "" : " locked") +
-              (mission && mission.id === m.id ? " active" : "");
-            var badge = done ? "✓" : (unlocked ? String(m.id) : "✗");
-            var subtitle = m.rewardCrypto + " +" + Fmt.crypto(m.rewardAmount) + " · " +
-              Fmt.dollars(m.rewardDollars) + " · +" + m.rewardXp + " XP";
-            var btn = UI.button({
-              text: badge + "  " + m.title + "\n" + subtitle,
-              accent: done ? "#00ff9d" : (unlocked ? "#d7e3f4" : "#3a4a63"),
-              kind: "ghost",
-              cls: cls,
-              style: { height: "50px", "align-items": "center" },
-              onClick: function () { selectMission(m.id); }
-            });
-            missionItems.appendChild(btn);
+
+          // 1. обучение — всегда первым и всегда доступно
+          var tut = game.tutorial;
+          missionItems.appendChild(contractRow(tut, game.tutorialDone()
+            ? "пройдено · повтор без награды"
+            : "обучение · вызываем первую функцию"));
+
+          // 2. контракты: незакрытые сверху, закрытые — в истории
+          var open = [], closed = [];
+          game.contracts.forEach(function (rec) {
+            var m = game.contractMission(rec);
+            (game.isMissionCompleted(m.id) ? closed : open).push(m);
           });
+
+          open.forEach(function (m) {
+            missionItems.appendChild(contractRow(m, m.tierLabel + " · защита " + m.security + "% · +" +
+              Fmt.dollars(m.rewardDollars) + " · +" + Fmt.crypto(m.rewardAmount) + " " + m.rewardCrypto));
+          });
+
+          if (closed.length) {
+            missionItems.appendChild(el("div", { cls: "divider", text: "ИСТОРИЯ · " + closed.length }));
+            closed.slice().reverse().forEach(function (m) {
+              missionItems.appendChild(contractRow(m, "закрыт · " + m.difficulty + " · " + m.targetName));
+            });
+          }
+
+          refreshTierBox();
         }
 
         /* ---------------------------- вкладки ------------------------------ */
@@ -200,7 +311,7 @@
 
         /* --------------------------- выбор цели ---------------------------- */
         function selectMission(id) {
-          var found = game.Data.getMission(id) || game.Data.missions[0];
+          var found = game.getMission(id) || game.tutorial;
           if (!found) return;
           mission = found;
           game.selectedMission = mission.id;
@@ -308,13 +419,24 @@
         function finishRun(ok, missing, stars) {
           setBusy(false);
           if (ok) {
-            if (!game.isMissionCompleted(mission.id)) {
+            var firstTime = !game.isMissionCompleted(mission.id);
+            var wasTutorial = !!mission.tutorial;
+            if (firstTime) {
               game.hackSuccess(mission, stars);
             } else {
               consoleBox.addLine("Цель уже взломана — награда не начисляется.", "info");
             }
             setResult("ВЗЛОМ УСПЕШЕН", stars, true);
             CH.Sfx.hackSuccess();
+
+            // обучение позади → выдаём первый контракт сразу, без лишних кликов
+            if (wasTutorial && firstTime) {
+              var next = game.createContract("easy");
+              if (next) {
+                UI.toast("Обучение пройдено", "Держи первый контракт: " + next.title, "ok");
+                setTimeout(function () { selectMission(next.id); }, 700);
+              }
+            }
           } else {
             if (missing && missing.length) {
               consoleBox.addLine("Не хватает шагов: " + missing.length + ". Открой вкладку «Подсказки».", "warn");
