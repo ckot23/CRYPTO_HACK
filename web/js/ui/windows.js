@@ -15,7 +15,7 @@
   function Window(layer, id, opts) {
     opts = opts || {};
     this.id = id;
-    this.accent = opts.accent || "#00ff9d";
+    this.accent = opts.accent || "#4fe0a8";
     this._layer = layer;
     this._closed = false;
     this._closeHandlers = [];

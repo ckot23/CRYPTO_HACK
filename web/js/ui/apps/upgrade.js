@@ -21,12 +21,12 @@
   function upgradeApp(game) {
     return {
       title: "ЧЁРНЫЙ РЫНОК // АПГРЕЙДЫ",
-      accent: "#ff9f43",
+      accent: "#ffb27a",
       width: 720,
       height: 560,
       build: function (body, win) {
         var signature = "";
-        var balance = el("div", { cls: "card card--soft", style: { padding: "8px 10px", border: "1px solid rgba(255,230,0,0.45)", background: "rgba(255,230,0,0.05)" } });
+        var balance = el("div", { cls: "card card--soft", style: { padding: "8px 10px", border: "1px solid rgba(255,212,121,0.45)", background: "rgba(255,212,121,0.05)" } });
         var cards = el("div", { cls: "col", style: { gap: "10px" } });
         body.appendChild(el("div", { cls: "col", style: { gap: "10px" } }, balance, cards));
 
@@ -34,7 +34,7 @@
           CH.Dom.clear(balance);
           balance.appendChild(el("div", { cls: "row" },
             el("span", { cls: "label", text: "Баланс:" }),
-            el("span", { cls: "b", style: { color: "#ffe600", "font-size": "15px" }, text: Fmt.dollarsFull(game.dollars) }),
+            el("span", { cls: "b", style: { color: "#ffd479", "font-size": "15px" }, text: Fmt.dollarsFull(game.dollars) }),
             el("span", { cls: "label", style: { "margin-left": "auto" }, text: "продавай крипту на бирже → качайся" })
           ));
         }
@@ -52,7 +52,7 @@
             maxed
               ? el("div", { cls: "max", text: "✓ MAX" })
               : UI.button({
-                text: Fmt.dollars(cost), accent: "#ffe600", kind: "solid", height: 30,
+                text: Fmt.dollars(cost), accent: "#ffd479", kind: "solid", height: 30,
                 style: { width: "110px" },
                 disabled: !afford,
                 onClick: function () {

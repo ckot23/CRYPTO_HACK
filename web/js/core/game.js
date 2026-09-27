@@ -237,7 +237,7 @@
     var m = new CH.Mission(src);            // копия с методами (requirementsText и др.)
     m.tutorial = true;
     m.difficulty = "ОБУЧЕНИЕ";
-    m.tierAccent = "#00e5ff";
+    m.tierAccent = "#6cd8f2";
     m.title = "ОБУЧЕНИЕ · " + (m.title || "Первый скан");
     return m;
   };

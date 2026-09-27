@@ -12,7 +12,7 @@
   function learnApp(game) {
     return {
       title: "ШКОЛА PYTHON",
-      accent: "#ff2d78",
+      accent: "#ff7aa8",
       width: 900,
       height: 620,
       build: function (body, win) {
@@ -41,7 +41,7 @@
             var active = lesson && lesson.id === l.id;
             var item = UI.button({
               text: (done ? "✓" : l.id) + "  " + l.title + "\n" + l.duration + " · +" + l.xp + " XP",
-              accent: done ? "#00ff9d" : "#ff2d78",
+              accent: done ? "#4fe0a8" : "#ff7aa8",
               kind: "ghost",
               cls: "lesson-item" + (done ? " done" : "") + (active ? " active" : ""),
               onClick: function () { select(l.id); }
@@ -72,12 +72,12 @@
 
           var box = el("div", { cls: "col", style: { gap: "10px" } });
           box.appendChild(el("div", { cls: "b", style: { "font-size": "17px" }, text: lesson.title }));
-          box.appendChild(el("div", { style: { color: "#ff2d78", "font-size": "11px" }, text: lesson.subtitle }));
+          box.appendChild(el("div", { style: { color: "#ff7aa8", "font-size": "11px" }, text: lesson.subtitle }));
 
           lesson.content.forEach(function (block) {
             box.appendChild(el("div", { cls: "lesson-block" },
               el("h4", { text: block.heading }),
-              el("div", { style: { color: "#b9c7dd", "font-size": "12px", "white-space": "pre-wrap" }, text: block.text })
+              el("div", { style: { color: "#c3cee1", "font-size": "12px", "white-space": "pre-wrap" }, text: block.text })
             ));
           });
 
@@ -103,7 +103,7 @@
               var picked = answers[qi] === oi;
               var isRight = oi === q.answer;
               var cls = picked && isRight ? " right" : (picked && !isRight ? " wrong" : "");
-              var accent = picked && isRight ? "#00ff9d" : (picked && !isRight ? "#ff2d78" : "#8fa3bd");
+              var accent = picked && isRight ? "#4fe0a8" : (picked && !isRight ? "#ff7aa8" : "#9aabc4");
               if (picked && isRight) cls = " right";
               var b = UI.button({
                 text: opt,
@@ -124,13 +124,13 @@
           });
 
           if (done) {
-            quiz.appendChild(el("div", { cls: "b", style: { color: "#00ff9d", "font-size": "12px" }, text: "✓ Урок пройден! +" + lesson.xp + " XP получено" }));
+            quiz.appendChild(el("div", { cls: "b", style: { color: "#4fe0a8", "font-size": "12px" }, text: "✓ Урок пройден! +" + lesson.xp + " XP получено" }));
           } else {
             var label = "ОТВЕТЬ НА ВСЕ ВОПРОСЫ";
             if (allAnswered && !passed) label = "ЕСТЬ ОШИБКИ — ПОПРОБУЙ ЕЩЁ";
             else if (allAnswered && passed) label = "ЗАБРАТЬ +" + lesson.xp + " XP";
             quiz.appendChild(UI.button({
-              text: label, accent: "#ffe600", kind: "solid", height: 32,
+              text: label, accent: "#ffd479", kind: "solid", height: 32,
               style: { width: "380px", "max-width": "100%" },
               disabled: !(allAnswered && passed),
               onClick: function () {

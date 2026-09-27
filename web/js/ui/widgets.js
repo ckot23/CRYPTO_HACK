@@ -43,7 +43,7 @@
   /** Кнопка в духе UiButton: solid / outline / ghost + акцентный цвет. */
   function button(opts) {
     opts = opts || {};
-    var accent = opts.accent || "#00ff9d";
+    var accent = opts.accent || "#4fe0a8";
     var kind = opts.kind || "solid";
     var cls = "btn btn--" + kind + (opts.cls ? " " + opts.cls : "");
     var node = el("button", {
@@ -86,7 +86,7 @@
         value: opts.value !== undefined ? opts.value : "",
         placeholder: opts.placeholder || ""
       },
-      style: { "--accent": opts.accent || "#00e5ff", width: (opts.width || 120) + "px" }
+      style: { "--accent": opts.accent || "#6cd8f2", width: (opts.width || 120) + "px" }
     });
     node.addEventListener("input", function () {
       node.value = node.value.replace(/[^\d.,-]/g, "").replace(",", ".");
@@ -135,17 +135,17 @@
   })();
 
   function kindAccent(kind) {
-    if (kind === "ok") return "#00ff9d";
-    if (kind === "gold") return "#ffe600";
-    if (kind === "err") return "#ff2d78";
-    if (kind === "warn") return "#ff9f43";
-    return "#00e5ff";
+    if (kind === "ok") return "#4fe0a8";
+    if (kind === "gold") return "#ffd479";
+    if (kind === "err") return "#ff7aa8";
+    if (kind === "warn") return "#ffb27a";
+    return "#6cd8f2";
   }
 
   /* ------------------------------ МОДАЛКА --------------------------------- */
   function modal(opts) {
     opts = opts || {};
-    var accent = opts.accent || "#00e5ff";
+    var accent = opts.accent || "#6cd8f2";
     var card = el("div", { cls: "modal-card", style: { "--accent": accent } });
     var overlay = el("div", { cls: "modal", style: { "--accent": accent } }, card);
 
@@ -235,7 +235,7 @@
     this.canvas = el("canvas", { cls: "chart" });
     this.canvas.style.height = (height || 112) + "px";
     this.values = [];
-    this.color = "#00ff9d";
+    this.color = "#4fe0a8";
     if (parent) parent.appendChild(this.canvas);
     this.ctx = this.canvas.getContext("2d");
     var self = this;
@@ -262,7 +262,7 @@
     ctx.clearRect(0, 0, w, h);
 
     // фон + сетка, как в UiChart
-    ctx.fillStyle = "rgba(0, 0, 0, 0.35)";
+    ctx.fillStyle = "rgba(9, 14, 26, 0.45)";
     ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = "rgba(255, 255, 255, 0.06)";
     ctx.lineWidth = 1;
@@ -325,7 +325,7 @@
 
   function hexToRgba(hex, alpha) {
     var c = parseColor(hex);
-    if (!c) return "rgba(0, 255, 157, " + alpha + ")";
+    if (!c) return "rgba(79, 224, 168, " + alpha + ")";
     return "rgba(" + c.r + "," + c.g + "," + c.b + "," + alpha + ")";
   }
 
@@ -344,7 +344,7 @@
 
     /** Полоска прогресса. */
     bar: function (accent) {
-      var fill = el("i", { style: { background: accent || "#00ff9d" } });
+      var fill = el("i", { style: { background: accent || "#4fe0a8" } });
       var node = el("div", { cls: "bar" }, fill);
       node.setValue = function (p) { fill.style.width = Math.round(Math.max(0, Math.min(1, p)) * 100) + "%"; };
       return node;
@@ -367,7 +367,7 @@
     sectionTitle: function (text, accent) {
       return el("div", {
         cls: "label b",
-        style: { color: accent || "#8fa3bd", "letter-spacing": "1px", "margin-top": "4px" },
+        style: { color: accent || "#9aabc4", "letter-spacing": "1px", "margin-top": "4px" },
         text: text
       });
     },

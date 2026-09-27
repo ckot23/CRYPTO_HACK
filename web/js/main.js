@@ -91,8 +91,8 @@
         "align-items": "center", "justify-content": "center", gap: "12px", padding: "24px", "text-align": "center"
       }
     },
-      CH.Dom.el("h1", { style: { color: "#ff2d78", "font-size": "18px" }, text: message }),
-      CH.Dom.el("div", { style: { color: "#8fa3bd", "font-size": "12px" }, text: hint || "" })
+      CH.Dom.el("h1", { style: { color: "#ff7aa8", "font-size": "18px" }, text: message }),
+      CH.Dom.el("div", { style: { color: "#9aabc4", "font-size": "12px" }, text: hint || "" })
     ));
   }
 

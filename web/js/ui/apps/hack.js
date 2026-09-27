@@ -22,7 +22,7 @@
   function hackApp(game) {
     return {
       title: "NEON_HACK // ТЕРМИНАЛ ВЗЛОМА",
-      accent: "#00ff9d",
+      accent: "#4fe0a8",
       width: 930,
       height: 620,
       flush: false,
@@ -54,8 +54,8 @@
         tabBar.style.gap = "8px";
 
         var syntaxLabel = el("span", { cls: "syntax", text: "синтаксис: ок" });
-        var modeBtn = UI.button({ text: "РЕЖИМ: СИМУЛЯТОР", accent: "#00e5ff", kind: "ghost", height: 20, cls: "mode-btn" });
-        var resetBtn = UI.button({ text: "сбросить", accent: "#5b6b85", kind: "ghost", height: 20 });
+        var modeBtn = UI.button({ text: "РЕЖИМ: СИМУЛЯТОР", accent: "#6cd8f2", kind: "ghost", height: 20, cls: "mode-btn" });
+        var resetBtn = UI.button({ text: "сбросить", accent: "#7286a0", kind: "ghost", height: 20 });
         var editorHead = el("div", { cls: "editor-head" },
           el("span", { cls: "name", text: "⌁ exploit.py" }),
           el("span", { cls: "spacer" }),
@@ -66,7 +66,7 @@
           onRun: function () { run(); }
         });
 
-        var playBtn = UI.button({ text: "▶ ЗАПУСТИТЬ", accent: "#00ff9d", kind: "solid", height: 26, style: { width: "150px" } });
+        var playBtn = UI.button({ text: "▶ ЗАПУСТИТЬ", accent: "#4fe0a8", kind: "solid", height: 26, style: { width: "150px" } });
         var editorFoot = el("div", { cls: "editor-head" },
           playBtn,
           el("span", { cls: "faint", text: "Ctrl+Enter — запуск · Tab — отступ" }),
@@ -96,7 +96,7 @@
           var active = tierChoice === t.key;
           var chip = UI.button({
             text: t.label,
-            accent: unlocked ? t.accent : "#3a4a63",
+            accent: unlocked ? t.accent : "#546480",
             kind: active ? "solid" : "outline",
             height: 22,
             cls: "tier-chip" + (active ? " active" : "") + (unlocked ? "" : " locked"),
@@ -138,7 +138,7 @@
               bossBox.classList.add("accepted");
               var open = UI.button({
                 text: "ОТКРЫТЬ ЦЕЛЬ",
-                accent: "#ff2d78",
+                accent: "#ff7aa8",
                 kind: "outline",
                 height: 28,
                 onClick: function () {
@@ -151,7 +151,7 @@
             } else if (status.ready) {
               var accept = UI.button({
                 text: "ПРИНЯТЬ ВЫЗОВ",
-                accent: "#ff2d78",
+                accent: "#ff7aa8",
                 kind: "solid",
                 height: 28,
                 onClick: function () { confirmBoss(boss); }
@@ -225,10 +225,10 @@
           var badge = done ? "✓" : (m.boss ? "☠" : (unlocked ? "!" : "✗"));
           var btn = UI.button({
             text: badge + "  " + m.title + "\n" + subtitle,
-            accent: done ? "#00ff9d" : (unlocked ? (m.tierAccent || "#d7e3f4") : "#3a4a63"),
+            accent: done ? "#4fe0a8" : (unlocked ? (m.tierAccent || "#e2e9f5") : "#546480"),
             kind: "ghost",
             cls: cls,
-            style: { height: "50px", "align-items": "center", "border-left": "2px solid " + (m.tierAccent || "#00e5ff") },
+            style: { height: "50px", "align-items": "center", "border-left": "3px solid " + (m.tierAccent || "#6cd8f2") },
             onClick: function () { selectMission(m.id); }
           });
           return btn;
@@ -268,7 +268,7 @@
         /* ----------------------------- боссы ------------------------------- */
         function confirmBoss(boss) {
           var body = el("div", { cls: "col" },
-            el("div", { style: { "font-size": "12px", color: "#b9c7dd", "white-space": "pre-wrap" }, text: boss.briefing }),
+            el("div", { style: { "font-size": "12px", color: "#c3cee1", "white-space": "pre-wrap" }, text: boss.briefing }),
             el("div", { cls: "boss-reward", text:
               "ЗАЩИТА " + boss.security + "% · НАГРАДА: +" + Fmt.crypto(boss.amount) + " " + boss.coin +
               " · +" + Fmt.dollarsFull(boss.dollars) + " · +" + boss.xp + " XP" }),
@@ -276,7 +276,7 @@
           );
           var buttons = el("div", { cls: "row", style: { gap: "8px" } });
           var ok = UI.button({
-            text: "ПРИНЯТЬ ВЫЗОВ", accent: "#ff2d78", kind: "solid", height: 34,
+            text: "ПРИНЯТЬ ВЫЗОВ", accent: "#ff7aa8", kind: "solid", height: 34,
             style: { flex: "1 1 0" },
             onClick: function () {
               var created = game.acceptBoss();
@@ -290,12 +290,12 @@
           });
           buttons.appendChild(ok);
           buttons.appendChild(UI.button({
-            text: "позже", accent: "#5b6b85", kind: "outline", height: 34,
+            text: "позже", accent: "#7286a0", kind: "outline", height: 34,
             onClick: function () { modal.close(); }
           }));
           body.appendChild(buttons);
 
-          var modal = UI.modal({ title: boss.glyph + " " + boss.name, body: body, accent: "#ff2d78" });
+          var modal = UI.modal({ title: boss.glyph + " " + boss.name, body: body, accent: "#ff7aa8" });
         }
 
         /* ---------------------------- вкладки ------------------------------ */
@@ -304,7 +304,7 @@
           TABS.forEach(function (t) {
             var b = UI.button({
               text: t.label,
-              accent: tab === t.id ? "#00ff9d" : "#5b6b85",
+              accent: tab === t.id ? "#4fe0a8" : "#7286a0",
               kind: "ghost",
               cls: tab === t.id ? "active" : "",
               height: 24,
@@ -324,43 +324,43 @@
           if (!mission) return;
 
           if (!game.missionUnlocked(mission)) {
-            tabPanel.appendChild(el("div", { cls: "b", style: { color: "#ff2d78", "font-size": "16px" }, text: "ДОСТУП ЗАБЛОКИРОВАН" }));
+            tabPanel.appendChild(el("div", { cls: "b", style: { color: "#ff7aa8", "font-size": "16px" }, text: "ДОСТУП ЗАБЛОКИРОВАН" }));
             tabPanel.appendChild(el("p", {
-              style: { color: "#b9c7dd", "font-size": "12px" },
+              style: { color: "#c3cee1", "font-size": "12px" },
               text: "Цель требует " + (mission.requirementsText() || "больше опыта") +
                 " (сейчас уровень " + game.level + ", библиотека кода ур. " + game.upgradeLevel("codeLib") + "). " +
                 "Взламывай другие миссии, учись в школе Python и качайся."
             }));
-            tabPanel.appendChild(el("div", { style: { color: "#ffe600", "font-size": "12px" }, text: "Концепт миссии: " + mission.concept }));
+            tabPanel.appendChild(el("div", { style: { color: "#ffd479", "font-size": "12px" }, text: "Концепт миссии: " + mission.concept }));
             return;
           }
 
           if (tab === "theory") {
-            tabPanel.appendChild(el("div", { cls: "b", style: { color: "#00e5ff" }, text: "Тема: " + mission.concept }));
-            tabPanel.appendChild(el("p", { style: { color: "#8fa3bd", "font-size": "12px" }, text: mission.conceptDesc }));
+            tabPanel.appendChild(el("div", { cls: "b", style: { color: "#6cd8f2" }, text: "Тема: " + mission.concept }));
+            tabPanel.appendChild(el("p", { style: { color: "#9aabc4", "font-size": "12px" }, text: mission.conceptDesc }));
             mission.theory.forEach(function (t, i) {
-              tabPanel.appendChild(el("p", { style: { color: "#b9c7dd", "font-size": "12px" }, text: (i + 1) + ". " + t }));
+              tabPanel.appendChild(el("p", { style: { color: "#c3cee1", "font-size": "12px" }, text: (i + 1) + ". " + t }));
             });
             return;
           }
 
           if (tab === "hints") {
             mission.hints.forEach(function (h) {
-              tabPanel.appendChild(el("p", { style: { color: "#b9c7dd", "font-size": "12px" }, text: "● " + h }));
+              tabPanel.appendChild(el("p", { style: { color: "#c3cee1", "font-size": "12px" }, text: "● " + h }));
             });
             if (!showSolution) {
               tabPanel.appendChild(UI.button({
                 text: "показать готовое решение (без штрафа, ты же учишься)",
-                accent: "#5b6b85", kind: "ghost", height: 26,
+                accent: "#7286a0", kind: "ghost", height: 26,
                 onClick: function () { showSolution = true; refreshTabPanel(); }
               }));
             } else {
               var box = el("div", { cls: "solution-box" });
               var head = el("div", { cls: "row" },
-                el("span", { cls: "b", style: { color: "#ff2d78", "font-size": "11px" }, text: "РЕШЕНИЕ:" }),
+                el("span", { cls: "b", style: { color: "#ff7aa8", "font-size": "11px" }, text: "РЕШЕНИЕ:" }),
                 (function () {
                   var b = UI.button({
-                    text: "вставить в редактор", accent: "#00ff9d", kind: "ghost", height: 20,
+                    text: "вставить в редактор", accent: "#4fe0a8", kind: "ghost", height: 20,
                     onClick: function () {
                       editor.setText(mission.solution, true);
                       consoleBox.clear();
@@ -380,10 +380,10 @@
           }
 
           // brief
-          tabPanel.appendChild(el("p", { style: { color: "#b9c7dd", "font-size": "12px" }, text: mission.briefing }));
+          tabPanel.appendChild(el("p", { style: { color: "#c3cee1", "font-size": "12px" }, text: mission.briefing }));
           tabPanel.appendChild(el("div", { cls: "task-box" }, "ЗАДАЧА:\n" + mission.task));
           tabPanel.appendChild(el("div", {
-            style: { color: "#ffe600", "font-size": "12px", "margin-top": "6px" },
+            style: { color: "#ffd479", "font-size": "12px", "margin-top": "6px" },
             text: "+" + Fmt.crypto(mission.rewardAmount) + " " + mission.rewardCrypto +
               "   +" + Fmt.dollars(mission.rewardDollars) + "   +" + mission.rewardXp + " XP" +
               (game.isMissionCompleted(mission.id) ? "   ✓ пройдено — повтор без награды" : "") +
@@ -425,7 +425,7 @@
           }
           modeBtn.setText(label);
           realMode = game.realPython && CH.PyRunner.available;
-          modeBtn.setAccent(CH.PyRunner.available || !game.realPython ? "#00e5ff" : "#ff9f43");
+          modeBtn.setAccent(CH.PyRunner.available || !game.realPython ? "#6cd8f2" : "#ffb27a");
         }
 
         function toggleMode() {

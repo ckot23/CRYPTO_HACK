@@ -54,7 +54,7 @@
     });
     var error = el("div", { cls: "login-error", text: "" });
     var enterBtn = UI.button({
-      text: "ВОЙТИ В СИСТЕМУ", accent: "#00ff9d", kind: "solid", height: 44,
+      text: "ВОЙТИ В СИСТЕМУ", accent: "#4fe0a8", kind: "solid", height: 44,
       style: { width: "100%" },
       onClick: function () { submit(); }
     });
@@ -72,7 +72,7 @@
       el("div", { cls: "login-rules", text: "3–16 символов: буквы, цифры, _ . - · Enter — войти" }),
       el("div", { cls: "login-guest" },
         UI.button({
-          text: "войти как ghost", accent: "#00e5ff", kind: "ghost", height: 24,
+          text: "войти как ghost", accent: "#6cd8f2", kind: "ghost", height: 24,
           onClick: function () { input.value = "ghost"; input.focus(); }
         })
       )

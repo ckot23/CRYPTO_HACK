@@ -20,25 +20,25 @@
      Монета привязана к сложности и совпадает с уровнем разблокировки. */
   var TIERS = [
     {
-      key: "easy", label: "ЛЕГКО", accent: "#00ff9d", coin: "BTC",
+      key: "easy", label: "ЛЕГКО", accent: "#4fe0a8", coin: "BTC",
       minLevel: 1, codeLib: 0, security: [8, 26],
       dollars: [60, 130], xp: [110, 170], amount: [0.0012, 0.0032],
       blurb: "Домашние машины, слабые пароли, быстрый профит."
     },
     {
-      key: "medium", label: "СРЕДНЕ", accent: "#ffe600", coin: "ETH",
+      key: "medium", label: "СРЕДНЕ", accent: "#ffd479", coin: "ETH",
       minLevel: 2, codeLib: 0, security: [30, 50],
       dollars: [180, 340], xp: [200, 300], amount: [0.02, 0.06],
       blurb: "Есть антивирус и вменяемые пароли."
     },
     {
-      key: "hard", label: "СЛОЖНО", accent: "#ff9f43", coin: "XMR",
+      key: "hard", label: "СЛОЖНО", accent: "#ffb27a", coin: "XMR",
       minLevel: 3, codeLib: 1, security: [52, 72],
       dollars: [420, 720], xp: [320, 460], amount: [2, 6],
       blurb: "Корпоративные сети, шифрование, логи."
     },
     {
-      key: "expert", label: "ЭКСПЕРТ", accent: "#ff2d78", coin: "SOL",
+      key: "expert", label: "ЭКСПЕРТ", accent: "#ff7aa8", coin: "SOL",
       minLevel: 5, codeLib: 3, security: [74, 96],
       dollars: [900, 1700], xp: [480, 700], amount: [3, 9],
       blurb: "Дата-центры и кошельки китов. Тут ошибаться нельзя."

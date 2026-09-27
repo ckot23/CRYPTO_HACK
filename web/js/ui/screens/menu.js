@@ -24,7 +24,7 @@
     var top = el("div", { cls: "top" },
       el("span", { cls: "status-online", text: "● NEON NET ONLINE" }),
       el("span", { cls: "label", text: "оператор: " + (game.displayName() || "неизвестен") }),
-      el("span", { cls: "right", text: "v1.0.5 · браузерная версия" })
+      el("span", { cls: "right", text: "v1.0.6 · мягкий вид" })
     );
 
     /* ------------------------------- центр -------------------------------- */
@@ -36,7 +36,7 @@
     var buttons = el("div", { cls: "menu-buttons" },
       UI.button({
         text: hasSave ? "ПРОДОЛЖИТЬ ВЗЛОМ" : "НАЧАТЬ ИГРУ",
-        accent: "#00ff9d", kind: "solid", height: 54,
+        accent: "#4fe0a8", kind: "solid", height: 54,
         onClick: function () {
           CH.Sfx.unlock();
           CH.Sfx.uiClick();
@@ -45,14 +45,14 @@
         }
       }),
       UI.button({
-        text: "КАК ИГРАТЬ", accent: "#00e5ff", kind: "outline", height: 40, cls: "small",
+        text: "КАК ИГРАТЬ", accent: "#6cd8f2", kind: "outline", height: 40, cls: "small",
         onClick: showHelp
       })
     );
 
     if (hasSave) {
       buttons.appendChild(UI.button({
-        text: "СБРОСИТЬ ПРОГРЕСС", accent: "#ff2d78", kind: "ghost", height: 28, cls: "small",
+        text: "СБРОСИТЬ ПРОГРЕСС", accent: "#ff7aa8", kind: "ghost", height: 28, cls: "small",
         onClick: function () {
           game.resetProgress();
           UI.toast("Прогресс сброшен", "Новая жизнь начинается с $150", "warn");
@@ -145,11 +145,11 @@
       "6. Клавиши 1–7 открывают программы, Esc закрывает верхнее окно."
     ];
     var box = el("div", { cls: "col" });
-    steps.forEach(function (s) { box.appendChild(el("div", { style: { "font-size": "13px", color: "#b9c7dd" }, text: s })); });
+    steps.forEach(function (s) { box.appendChild(el("div", { style: { "font-size": "13px", color: "#c3cee1" }, text: s })); });
     UI.modal({
       title: "КАК ИГРАТЬ",
       body: box,
-      accent: "#00e5ff",
+      accent: "#6cd8f2",
       okLabel: "ПОНЯТНО"
     });
   }

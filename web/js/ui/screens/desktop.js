@@ -12,13 +12,13 @@
   var Fmt = CH.Fmt;
 
   var APPS = [
-    { id: "hack", label: "Хак-терминал", glyph: "⌁", accent: "#00ff9d", make: "hack" },
-    { id: "miner", label: "Майнеры", glyph: "⚙", accent: "#00e5ff", make: "miner" },
-    { id: "trade", label: "Биржа", glyph: "▲", accent: "#ffe600", make: "trade" },
-    { id: "upgrade", label: "Апгрейды", glyph: "✚", accent: "#ff9f43", make: "upgrade" },
-    { id: "learn", label: "Школа Python", glyph: "✎", accent: "#ff2d78", make: "learn" },
-    { id: "files", label: "Файлы", glyph: "▶", accent: "#00e5ff", make: "files" },
-    { id: "profile", label: "Профиль", glyph: "★", accent: "#ffe600", make: "profile" }
+    { id: "hack", label: "Хак-терминал", glyph: "⌁", accent: "#4fe0a8", make: "hack" },
+    { id: "miner", label: "Майнеры", glyph: "⚙", accent: "#6cd8f2", make: "miner" },
+    { id: "trade", label: "Биржа", glyph: "▲", accent: "#ffd479", make: "trade" },
+    { id: "upgrade", label: "Апгрейды", glyph: "✚", accent: "#ffb27a", make: "upgrade" },
+    { id: "learn", label: "Школа Python", glyph: "✎", accent: "#ff7aa8", make: "learn" },
+    { id: "files", label: "Файлы", glyph: "▶", accent: "#6cd8f2", make: "files" },
+    { id: "profile", label: "Профиль", glyph: "★", accent: "#ffd479", make: "profile" }
   ];
 
   function DesktopScreen(host, opts) {
@@ -36,14 +36,14 @@
     this.prevPrices = {};
     var tickersRow = el("div", { cls: "row", style: { gap: "14px" } });
     game.Data.cryptos.forEach(function (c) {
-      var node = el("div", { cls: "ticker", style: { color: "#d7e3f4" } });
+      var node = el("div", { cls: "ticker", style: { color: "#e2e9f5" } });
       self.tickers[c.id] = node;
       tickersRow.appendChild(node);
     });
 
     this.pyModeLabel = el("div", { cls: "py-mode", text: game.pythonModeText() });
     this.levelChip = el("div", { cls: "level-chip", text: "LV 1" });
-    this.xpBar = UI.bar("#ffe600");
+    this.xpBar = UI.bar("#ffd479");
     this.xpBar.style.width = "90px";
     this.xpText = el("div", { cls: "label", text: "" });
     this.money = el("div", { cls: "money", text: "" });
@@ -92,7 +92,7 @@
 
     /* ---------------------------- панель задач ---------------------------- */
     this.startBtn = UI.button({
-      text: "⌁ " + (game.displayName() || "ghost").toUpperCase(), accent: "#00ff9d", kind: "outline", height: 32,
+      text: "⌁ " + (game.displayName() || "ghost").toUpperCase(), accent: "#4fe0a8", kind: "outline", height: 32,
       onClick: function () { self.toggleStartMenu(); }
     });
     this.startBtn.style.width = "96px";
@@ -304,7 +304,7 @@
     );
     items.forEach(function (item) {
       var b = UI.button({
-        text: item.label, accent: "#d7e3f4", kind: "ghost", height: 30,
+        text: item.label, accent: "#e2e9f5", kind: "ghost", height: 30,
         cls: "item", onClick: item.action
       });
       menu.appendChild(b);
@@ -331,7 +331,7 @@
     UI.modal({
       title: "LEVEL " + level,
       text: text,
-      accent: "#ffe600",
+      accent: "#ffd479",
       okLabel: "ЗАБРАТЬ НАГРАДУ"
     });
   };
@@ -339,7 +339,7 @@
   DesktopScreen.prototype.showOnboarding = function () {
     var box = el("div", { cls: "col" },
       el("div", {
-        style: { "font-size": "12px", color: "#b9c7dd", "white-space": "pre-wrap" },
+        style: { "font-size": "12px", color: "#c3cee1", "white-space": "pre-wrap" },
         text: "Это NeonOS — твоя хакерская ОС. Слева программы, сверху деньги и курсы, снизу панель задач.\n" +
           "1. Пройди обучение в «Хак-терминале» — это единственная ручная миссия.\n" +
           "2. Дальше бери контракты: выбери сложность слева внизу — чем сложнее, тем выше награда.\n" +
@@ -350,7 +350,7 @@
     UI.modal({
       title: "Добро пожаловать, ghost!",
       body: box,
-      accent: "#00e5ff",
+      accent: "#6cd8f2",
       okLabel: "ПОГНАЛИ",
       onClose: (function (game) {
         return function () { game.save(); };

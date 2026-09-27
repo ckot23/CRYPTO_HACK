@@ -81,9 +81,9 @@
         c.speed = 28 + Math.random() * 70;
       }
       for (var r = 0; r < c.rows; r++) {
-        var alpha = (1 - r / c.rows) * 0.55;
+        var alpha = (1 - r / c.rows) * 0.38;
         if (alpha < 0.03) continue;
-        ctx.fillStyle = "rgba(0, 255, 157, " + alpha.toFixed(3) + ")";
+        ctx.fillStyle = "rgba(79, 224, 168, " + alpha.toFixed(3) + ")";
         ctx.fillText(c.text[r], c.x, c.y + r * 15);
       }
     }

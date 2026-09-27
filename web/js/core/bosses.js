@@ -193,7 +193,7 @@
       contractIndex: 0,
       tier: "expert",
       tierLabel: "БОСС",
-      tierAccent: "#ff2d78",
+      tierAccent: "#ff7aa8",
       title: boss.glyph + " БОСС: " + boss.name,
       codename: boss.name,
       targetName: boss.targetName,

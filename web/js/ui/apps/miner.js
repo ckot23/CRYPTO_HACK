@@ -14,7 +14,7 @@
   function minerApp(game) {
     return {
       title: "МАЙНИНГ-ФЕРМА",
-      accent: "#00e5ff",
+      accent: "#6cd8f2",
       width: 700,
       height: 560,
       build: function (body, win) {
@@ -22,7 +22,7 @@
         var signature = "";
         var unsubscribe = [];
 
-        var head = el("div", { cls: "card card--soft", style: { padding: "10px", border: "1px solid rgba(0,229,255,0.45)", background: "rgba(0,229,255,0.05)" } });
+        var head = el("div", { cls: "card card--soft", style: { padding: "10px", border: "1px solid rgba(108,216,242,0.45)", background: "rgba(108,216,242,0.05)" } });
         var list = el("div", { cls: "col" });
         var pickerRow = el("div", { cls: "row wrap" });
         var costLabel = el("div", { cls: "label" });
@@ -41,10 +41,10 @@
         function renderHead() {
           CH.Dom.clear(head);
           var row = el("div", { cls: "row" },
-            el("div", { cls: "b", style: { color: "#00e5ff", "font-size": "13px" }, text: "МАЙНИНГ-ФЕРМА · " + game.miners.length + " РИГ(ОВ)" }),
+            el("div", { cls: "b", style: { color: "#6cd8f2", "font-size": "13px" }, text: "МАЙНИНГ-ФЕРМА · " + game.miners.length + " РИГ(ОВ)" }),
             el("div", { cls: "label", style: { "margin-left": "auto" }, text: "мощность x" + game.minerEffMultNow().toFixed(1) })
           );
-          var income = el("div", { style: { color: "#00ff9d", "font-size": "11px", "margin-top": "6px" },
+          var income = el("div", { style: { color: "#4fe0a8", "font-size": "11px", "margin-top": "6px" },
             text: "Доход: ~" + Fmt.dollarsFull(game.minerIncomePerMin()) + "/мин пассивно" });
           head.appendChild(row);
           head.appendChild(income);
@@ -58,8 +58,8 @@
           }
           game.miners.slice().forEach(function (m) {
             var info = game.Data.getCrypto(m.crypto);
-            var card = el("div", { cls: "miner-card", style: { "--accent": info ? info.color : "#00e5ff" } },
-              el("div", { cls: "glyph", style: { color: info ? info.color : "#00e5ff" }, text: info ? info.icon : "?" }),
+            var card = el("div", { cls: "miner-card", style: { "--accent": info ? info.color : "#6cd8f2" } },
+              el("div", { cls: "glyph", style: { color: info ? info.color : "#6cd8f2" }, text: info ? info.icon : "?" }),
               el("div", {},
                 el("div", { cls: "name", text: m.pcName }),
                 el("div", { cls: "meta", text: m.ip + " · майнит " + m.crypto }),
@@ -69,7 +69,7 @@
                 el("span", { cls: "live", text: "● LIVE" }),
                 " ",
                 UI.button({
-                  text: "снять", accent: "#ff2d78", kind: "outline", height: 24,
+                  text: "снять", accent: "#ff7aa8", kind: "outline", height: 24,
                   onClick: function () { game.removeMiner(m.id); }
                 })
               )
@@ -124,7 +124,7 @@
               el("div", { cls: "actions" },
                 UI.button({
                   text: "+ " + selectedCrypto,
-                  accent: "#00e5ff",
+                  accent: "#6cd8f2",
                   kind: "solid",
                   height: 26,
                   style: { width: "130px" },

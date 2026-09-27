@@ -25,7 +25,7 @@
   function profileApp(game) {
     return {
       title: "ПРОФИЛЬ ХАКЕРА",
-      accent: "#ffe600",
+      accent: "#ffd479",
       width: 720,
       height: 600,
       build: function (body, win) {
@@ -40,7 +40,7 @@
         }
 
         function profileCard() {
-          var xpBar = UI.bar("#00ff9d");
+          var xpBar = UI.bar("#4fe0a8");
           xpBar.setValue(game.xpProgress());
           xpBar.style.width = "240px";
 
@@ -54,19 +54,19 @@
             ),
             el("div", { style: { "text-align": "right" } },
               el("div", { cls: "label", text: "КАПИТАЛ" }),
-              el("div", { cls: "b", style: { color: "#ffe600", "font-size": "20px" }, text: Fmt.dollarsFull(game.netWorth()) }),
-              el("div", { style: { color: "#00ff9d", "font-size": "10px" }, text: Fmt.dollars(game.minerIncomePerMin()) + "/мин майнинг" })
+              el("div", { cls: "b", style: { color: "#ffd479", "font-size": "20px" }, text: Fmt.dollarsFull(game.netWorth()) }),
+              el("div", { style: { color: "#4fe0a8", "font-size": "10px" }, text: Fmt.dollars(game.minerIncomePerMin()) + "/мин майнинг" })
             )
           );
         }
 
         function statsGrid() {
           var cells = [
-            { v: game.totalHacked, c: "ВЗЛОМОВ", color: "#00ff9d" },
-            { v: game.miners.length, c: "МАЙНЕРОВ", color: "#00e5ff" },
-            { v: game.bossesDefeated() + "/" + CH.Bosses.list.length, c: "БОССОВ", color: "#ff2d78" },
-            { v: game.completedLessons.length, c: "УРОКОВ", color: "#00e5ff" },
-            { v: game.totalTrades, c: "СДЕЛОК", color: "#ffe600" }
+            { v: game.totalHacked, c: "ВЗЛОМОВ", color: "#4fe0a8" },
+            { v: game.miners.length, c: "МАЙНЕРОВ", color: "#6cd8f2" },
+            { v: game.bossesDefeated() + "/" + CH.Bosses.list.length, c: "БОССОВ", color: "#ff7aa8" },
+            { v: game.completedLessons.length, c: "УРОКОВ", color: "#6cd8f2" },
+            { v: game.totalTrades, c: "СДЕЛОК", color: "#ffd479" }
           ];
           var grid = el("div", { cls: "stat-grid" });
           cells.forEach(function (cell) {
@@ -83,7 +83,7 @@
           var done = state.filter(Boolean).length;
 
           var card = el("div", { cls: "card", style: { padding: "10px 12px", background: "var(--panel-deep)" } },
-            el("div", { cls: "b", style: { color: "#00e5ff", "font-size": "12px" }, text: "ДОСТИЖЕНИЯ · " + done + "/" + ACHIEVEMENTS.length })
+            el("div", { cls: "b", style: { color: "#6cd8f2", "font-size": "12px" }, text: "ДОСТИЖЕНИЯ · " + done + "/" + ACHIEVEMENTS.length })
           );
           ACHIEVEMENTS.forEach(function (a, i) {
             card.appendChild(el("div", { cls: "ach" + (state[i] ? " done" : "") },

@@ -13,7 +13,7 @@
   function tradeApp(game) {
     return {
       title: "БИРЖА DARKEX",
-      accent: "#ffe600",
+      accent: "#ffd479",
       width: 760,
       height: 600,
       build: function (body, win) {
@@ -24,22 +24,22 @@
         var buyHasResult = false;
 
         var cardsRow = el("div", { cls: "coin-cards" });
-        var chartTitle = el("div", { cls: "b", style: { color: "#00ff9d", "font-size": "12px" } });
+        var chartTitle = el("div", { cls: "b", style: { color: "#4fe0a8", "font-size": "12px" } });
         var chartChange = el("div", { cls: "b", style: { "font-size": "12px", "margin-left": "auto" } });
         var chart = new UI.Chart(null, 112);
         var feeLabel = el("div", { cls: "label" });
-        var chartBox = el("div", { cls: "card", style: { padding: "10px", background: "rgba(0,0,0,0.5)" } },
+        var chartBox = el("div", { cls: "card", style: { padding: "10px", background: "rgba(9,14,26,0.5)" } },
           el("div", { cls: "row", style: { "margin-bottom": "6px" } }, chartTitle, chartChange),
           chart.canvas, feeLabel);
 
-        var amount = UI.field({ value: "100", width: 130, accent: "#00e5ff", onInput: function () { refreshInfo(); } });
+        var amount = UI.field({ value: "100", width: 130, accent: "#6cd8f2", onInput: function () { refreshInfo(); } });
         amount.addEventListener("keydown", function (e) {
           if (e.key === "Enter") { e.preventDefault(); fillMax(); }
         });
         var amountRow = el("div", { cls: "row" },
           el("span", { cls: "label", text: "Сумма в $:" }),
           amount,
-          UI.button({ text: "MAX", accent: "#00e5ff", kind: "outline", height: 28, onClick: fillMax }),
+          UI.button({ text: "MAX", accent: "#6cd8f2", kind: "outline", height: 28, onClick: fillMax }),
           el("span", { cls: "faint", style: { "font-size": "10px" }, text: "Enter — подставить весь баланс монеты" })
         );
 
@@ -47,15 +47,15 @@
         var sellResult = el("div", { cls: "result" });
         var buyInfo = el("div", { cls: "info" });
         var buyResult = el("div", { cls: "result" });
-        var sellBtn = UI.button({ text: "ПРОДАТЬ ЗА $", accent: "#00ff9d", kind: "solid", height: 30, style: { width: "100%" }, onClick: function () { doTrade(false); } });
-        var buyBtn = UI.button({ text: "КУПИТЬ", accent: "#00e5ff", kind: "solid", height: 30, style: { width: "100%" }, onClick: function () { doTrade(true); } });
+        var sellBtn = UI.button({ text: "ПРОДАТЬ ЗА $", accent: "#4fe0a8", kind: "solid", height: 30, style: { width: "100%" }, onClick: function () { doTrade(false); } });
+        var buyBtn = UI.button({ text: "КУПИТЬ", accent: "#6cd8f2", kind: "solid", height: 30, style: { width: "100%" }, onClick: function () { doTrade(true); } });
 
         var panels = el("div", { cls: "trade-panels" },
           el("div", { cls: "trade-panel sell" },
-            el("div", { cls: "head", style: { color: "#00ff9d" }, text: "ПРОДАТЬ → $" }),
+            el("div", { cls: "head", style: { color: "#4fe0a8" }, text: "ПРОДАТЬ → $" }),
             sellInfo, sellResult, sellBtn),
           el("div", { cls: "trade-panel buy" },
-            el("div", { cls: "head", style: { color: "#00e5ff" }, text: "КУПИТЬ $ → монета" }),
+            el("div", { cls: "head", style: { color: "#6cd8f2" }, text: "КУПИТЬ $ → монета" }),
             buyInfo, buyResult, buyBtn)
         );
 
@@ -113,7 +113,7 @@
               } }
             },
               el("div", { cls: "top" },
-                el("span", { cls: "glyph", style: { color: unlocked ? c.color : "#5b6b85" }, text: unlocked ? c.icon : "○" }),
+                el("span", { cls: "glyph", style: { color: unlocked ? c.color : "#7286a0" }, text: unlocked ? c.icon : "○" }),
                 el("span", { cls: "id", text: c.id })
               ),
               unlocked
@@ -121,7 +121,7 @@
                 : el("div", { cls: "lock", text: "заблокировано · нужен уровень " + c.unlockLevel }),
               unlocked ? el("div", {
                 cls: "change",
-                style: { color: change >= 0 ? "#00ff9d" : "#ff2d78" },
+                style: { color: change >= 0 ? "#4fe0a8" : "#ff7aa8" },
                 text: (change >= 0 ? "▲ " : "▼ ") + Math.abs(change).toFixed(2) + "%"
               }) : null
             );
@@ -159,11 +159,11 @@
           if (hist.length >= 2) {
             var change = (hist[hist.length - 1] - hist[0]) / hist[0] * 100;
             chartChange.textContent = (change >= 0 ? "▲ " : "▼ ") + Math.abs(change).toFixed(2) + "%";
-            chartChange.style.color = change >= 0 ? "#00ff9d" : "#ff2d78";
+            chartChange.style.color = change >= 0 ? "#4fe0a8" : "#ff7aa8";
           } else {
             chartChange.textContent = "";
           }
-          chart.setValues(hist, info ? info.color : "#00ff9d");
+          chart.setValues(hist, info ? info.color : "#4fe0a8");
 
           feeLabel.textContent = "● живой график · обновляется каждые " + game.PRICE_TICK_SEC.toFixed(0) +
             " сек · комиссия " + (game.fee() * 100).toFixed(0) + "%";

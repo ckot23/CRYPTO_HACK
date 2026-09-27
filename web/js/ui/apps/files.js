@@ -55,7 +55,7 @@
   function filesApp(game) {
     return {
       title: "ФАЙЛЫ // /home/ghost",
-      accent: "#00e5ff",
+      accent: "#6cd8f2",
       width: 860,
       height: 560,
       build: function (body, win) {
@@ -77,8 +77,8 @@
 
         function entries() {
           var list = [];
-          list.push({ folder: "docs", name: "пароли.txt", content: PASSWORDS, color: "#00e5ff" });
-          list.push({ folder: "docs", name: "шпаргалка_python.txt", content: CHEATSHEET, color: "#00e5ff" });
+          list.push({ folder: "docs", name: "пароли.txt", content: PASSWORDS, color: "#6cd8f2" });
+          list.push({ folder: "docs", name: "шпаргалка_python.txt", content: CHEATSHEET, color: "#6cd8f2" });
 
           game.missions().forEach(function (m) {
             if (!game.isMissionCompleted(m.id)) return;
@@ -87,7 +87,7 @@
               folder: "exploits",
               name: "exploit_" + m.id + "_" + slug(m.title) + ".py",
               content: code,
-              color: "#00ff9d"
+              color: "#4fe0a8"
             });
           });
 
@@ -99,7 +99,7 @@
               "balance: " + Fmt.crypto(amount) + " " + c.id + "\n" +
               "usd: " + Fmt.dollarsFull(amount * game.getPrice(c.id)) + "\n" +
               "note: ключ восстановления потерян при взломе. так бывает.\n";
-            list.push({ folder: "wallets", name: c.id.toLowerCase() + "_wallet.dat", content: text, color: "#ffe600" });
+            list.push({ folder: "wallets", name: c.id.toLowerCase() + "_wallet.dat", content: text, color: "#ffd479" });
           });
 
           game.miners.forEach(function (m) {
@@ -109,7 +109,7 @@
               "earned: " + Fmt.crypto(m.earned) + " " + m.crypto + "\n" +
               "uptime: постоянно, пока комп жертвы включён\n" +
               "log:\n  [ok] miner installed\n  [ok] payouts every second\n  [ok] tracker not detected\n";
-            list.push({ folder: "miners", name: slug(m.pcName) + ".log", content: text, color: "#ff2d78" });
+            list.push({ folder: "miners", name: slug(m.pcName) + ".log", content: text, color: "#ff7aa8" });
           });
 
           return list;
