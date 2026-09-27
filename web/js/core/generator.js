@@ -455,7 +455,7 @@
       conceptDesc: "f\"текст {переменная}\" подставляет значение прямо в строку — так собирают отчёты.",
       build: function (c) {
         return {
-          task: "Сохрани адрес цели в target и напечатай отчёт через f-строку: print(f\"Цель: {target}\").",
+          starterCode: "# f-строка: буква f перед кавычками\n# target = \"" + c.ip + "\"\n# print(f\"Цель: {target}\")\n\n",
           task: "Сохрани адрес цели в target и напечатай отчёт через f-строку: print(f\"Цель: {target}\").",
           solution: 'target = "' + c.ip + '"\nprint(f"Цель: {target}")',
           requiredPatterns: ["target\\s*=\\s*[\"']", "print\\s*\\(\\s*f[\"']", "\\{target\\}"],

@@ -302,14 +302,25 @@ async function run() {
 
   check("тексты заданий заполнены во всех шаблонах", (() => {
     const seen = new Set();
+    const bad = [];
     Gen.TIERS.forEach((tier) => {
       for (let seed = 1; seed <= 30; seed++) {
         const m = Gen.generate({ index: seed, tier: tier.key, seed: seed * 104729, contractsDone: 0, codeLib: 3 });
         seen.add(m.concept);
-        if (!m.task.includes("\n") && m.task.length < 20) return false;
+        if (m.task.length < 20) bad.push(m.concept + ": короткое задание");
+        if (!m.starterCode) bad.push(m.concept + ": нет стартового кода");
+        if (!m.solution) bad.push(m.concept + ": нет решения");
+        if (!m.hints.length) bad.push(m.concept + ": нет подсказок");
+        if (!m.theory.length) bad.push(m.concept + ": нет теории");
+        if (!m.requiredPatterns.length) bad.push(m.concept + ": нет обязательных конструкций");
+        if (!m.targetName || !m.briefing) bad.push(m.concept + ": пустая цель или брифинг");
+        [m.task, m.starterCode, m.solution, m.briefing].forEach((t) => {
+          if (String(t).indexOf("undefined") >= 0) bad.push(m.concept + ": undefined в тексте");
+        });
       }
     });
-    return seen.size >= 12;
+    if (bad.length) console.error("  неполные задания: " + bad.slice(0, 5).join("; "));
+    return bad.length === 0 && seen.size >= 12;
   })(), "разных типов заданий: " + (() => {
     const seen = new Set();
     Gen.TIERS.forEach((tier) => {
@@ -319,7 +330,6 @@ async function run() {
     });
     return seen.size;
   })());
-
   /* ------------- 12. совместимость со старым сейвом ------------------- */
   window.localStorage.setItem("cryptohack_save.json", JSON.stringify({
     version: 1, dollars: 500, xp: 10, level: 3,
@@ -328,6 +338,7 @@ async function run() {
     totalHacked: 3, totalEarnedDollars: 200, totalTrades: 2,
     selectedMission: 2, soundOn: true, realPython: false
   }));
+
   const legacyOk = game.loadSave();
   check("старый сейв (8 ручных миссий) подхватывается",
     legacyOk && game.level === 3 && game.tutorialDone() && game.contracts.length === 0,

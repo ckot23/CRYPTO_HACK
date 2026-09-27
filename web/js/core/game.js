@@ -280,8 +280,14 @@
 
   /** Сколько контрактов игрок уже закрыл (без обучения). */
   Game.prototype.contractsDone = function () {
-    var self = this;
-    return this.contracts.filter(function (c) { return self.isMissionCompleted(c.mission.id); }).length;
+    // записи контрактов — это {n, tier, seed, boss}: саму миссию собирает
+    // contractMission(), иначе обращение к c.mission падало (Cannot read 'id')
+    var done = 0;
+    for (var i = 0; i < this.contracts.length; i++) {
+      var m = this.contractMission(this.contracts[i]);
+      if (m && this.isMissionCompleted(m.id)) done++;
+    }
+    return done;
   };
 
   /** Последний сгенерированный, но ещё не взломанный контракт. */
