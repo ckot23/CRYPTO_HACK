@@ -1,0 +1,19 @@
+<!-- Проверка сборки всей Unity-версии без Unity: реальные файлы Assets/Scripts
+     компилируются поверх заглушек UnityEngine (UnityStubs.cs).
+     Запуск: dotnet build (см. README.md рядом) -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>cryptohack-unity-check</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <NoWarn>CS0649;CS0169;CS0414;CS0108;CS0114;CS0162</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnityStubs.cs" />
+    <Compile Include="../../Assets/Scripts/**/*.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>CRYPTO_HACK · NeonOS (браузерная версия)</title>
+  <meta name="description" content="Симулятор хакера: пиши код на Python, взламывай цели, ставь майнеры, торгуй криптой и учись в школе Python.">
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b1120'/%3E%3Ctext x='16' y='24' font-size='22' text-anchor='middle' fill='%234fe0a8' font-family='monospace'%3E%E2%8C%81%3C/text%3E%3C/svg%3E">
+
+  <link rel="preload" href="fonts/DejaVuSansMono.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="preload" href="fonts/DejaVuSansMono-Bold.ttf" as="font" type="font/ttf" crossorigin>
+  <link rel="stylesheet" href="css/neon.css">
+</head>
+<body>
+  <div id="screen" class="screen"></div>
+
+  <noscript>
+    <p style="color:#ff7aa8;font-family:monospace;padding:20px">
+      Игре нужен JavaScript — это интерактивный терминал, а не статичная страница.
+    </p>
+  </noscript>
+
+  <!-- ------------------------------------------------------------------
+       Порядок важен: сначала ядро (данные, игра, симулятор Python), потом
+       интерфейс, потом приложения. Модулей нет — обычные скрипты в общем
+       пространстве имён CH, поэтому игра открывается даже с file://
+       ------------------------------------------------------------------ -->
+
+  <!-- ядро -->
+  <script src="js/core/format.js"></script>
+  <script src="js/core/models.js"></script>
+  <script src="js/core/gamedata.js"></script>
+  <script src="js/core/game.js"></script>
+  <script src="js/core/generator.js"></script>
+  <script src="js/core/bosses.js"></script>
+  <script src="js/core/pysim.js"></script>
+  <script src="js/core/audio.js"></script>
+  <script src="js/core/pyrunner.js"></script>
+
+  <!-- интерфейс -->
+  <script src="js/ui/dom.js"></script>
+  <script src="js/ui/backgrounds.js"></script>
+  <script src="js/ui/widgets.js"></script>
+  <script src="js/ui/windows.js"></script>
+  <script src="js/ui/editor.js"></script>
+
+  <!-- экраны -->
+  <script src="js/ui/screens/poweron.js"></script>
+  <script src="js/ui/screens/auth.js"></script>
+  <script src="js/ui/screens/boot.js"></script>
+  <script src="js/ui/screens/menu.js"></script>
+  <script src="js/ui/screens/desktop.js"></script>
+
+  <!-- программы рабочего стола -->
+  <script src="js/ui/apps/hack.js"></script>
+  <script src="js/ui/apps/miner.js"></script>
+  <script src="js/ui/apps/trade.js"></script>
+  <script src="js/ui/apps/upgrade.js"></script>
+  <script src="js/ui/apps/learn.js"></script>
+  <script src="js/ui/apps/files.js"></script>
+  <script src="js/ui/apps/profile.js"></script>
+
+  <script src="js/main.js"></script>
+</body>
+</html>

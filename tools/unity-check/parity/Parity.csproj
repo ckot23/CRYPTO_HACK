@@ -1,0 +1,20 @@
+<!-- Сверка логики Unity-версии с браузерной: тот же генератор контрактов
+     должен выдавать те же задания при тех же seed. Запуск: dotnet run -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <LangVersion>9.0</LangVersion>
+    <AssemblyName>unity-parity</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <NoWarn>CS0649;CS0169;CS0414</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../UnityStubs.cs" />
+    <Compile Include="ParityCheck.cs" />
+    <Compile Include="../../../Assets/Scripts/Core/*.cs" />
+    <Compile Include="../../../Assets/Scripts/UI/Theme.cs" />
+  </ItemGroup>
+</Project>
